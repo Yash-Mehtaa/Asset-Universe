@@ -171,7 +171,7 @@ Every decision is framed through risk understanding.
 
 Contributions are welcome.
 
-```bash
+
 git checkout -b feature/amazing-feature
 git commit -m "Add amazing feature"
 git push origin feature/amazing-feature
