@@ -135,15 +135,104 @@ Asset Universe is built using modern production grade technologies:
 • CoinGecko API Key (optional but recommended)  
 • Alpha Vantage API Key  
 
+---  
+## Project Structure
+
+asset-universe/
+├── app/
+│   ├── layout.tsx
+│   ├── page.tsx
+│   ├── budget/
+│   ├── learn/
+│   ├── simulator/
+│   ├── portfolio/
+│   └── profile/
+├── components/
+├── public/
+├── styles/
+├── utils/
+├── types/
+└── README.md
+
+## 🎓 Educational Philosophy
+
+### Reality First  
+No unrealistic returns. Just honest education using real market data.
+
+### Time as a Teacher  
+No fast forwarding because patience is part of investing.
+
+### Risk Awareness  
+Every decision is framed through risk understanding.
+
 ---
 
-### Installation
+## 🤝 Contributing
+
+Contributions are welcome.
 
 ```bash
-git clone https://github.com/Yash-Mehtaa/Asset-Universe.git
-cd Asset-Universe
-npm install
-# or
-yarn install
-# or
-pnpm install
+git checkout -b feature/amazing-feature
+git commit -m "Add amazing feature"
+git push origin feature/amazing-feature
+
+### Ideas for Contributions
+- More asset types  
+- News sentiment analysis  
+- Mobile app  
+- Social features  
+- Expanded educational content  
+- User authentication and cloud sync  
+
+---
+
+## ⚠️ Disclaimer
+
+Asset Universe is an educational platform only.  
+It is not a registered investment advisor.
+
+Market data may be delayed or inaccurate.  
+Simulated portfolios do not reflect real performance.  
+Past performance does not guarantee future results.  
+Consult a licensed financial advisor before investing.
+
+---
+
+## 🙏 Acknowledgments
+
+### Market Data Providers
+- Finnhub.io  
+- CoinGecko  
+- Alpha Vantage  
+
+### Design Inspiration
+Mint, Robinhood, Personal Capital
+
+### Philosophy
+The Intelligent Investor  
+A Random Walk Down Wall Street  
+
+---
+
+## 💬 Connect
+
+**Built by:** Yash Kunal Mehta  
+Computer Science & Finance Student  
+Rutgers University New Brunswick  
+
+**GitHub:** @Yash-Mehtaa  
+**LinkedIn:** https://www.linkedin.com/in/yash-kunal-mehta-182aa4331/  
+**Email:** ym70134@gmail.com  
+
+---
+
+## 🌟 Star This Repo
+
+If Asset Universe helped you understand investing better, give it a ⭐️ on GitHub.
+
+**Live Demo:** https://asset-universe.vercel.app
+
+<div align="center">
+Built with ❤️ and ☕ by a student who believes financial literacy should be accessible to everyone.
+</div>
+
