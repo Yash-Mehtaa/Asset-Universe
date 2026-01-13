@@ -63,14 +63,6 @@ You cannot skip ahead to see if your portfolio grew. You have to wait, just like
 
 ---
 
-### 🧠 Unified Risk Scoring (1 to 10)
-
-Every asset gets a risk score from **1 (ultra safe bonds)** to **10 (highly volatile crypto)**.
-
-Your portfolio receives an overall risk score, and the app suggests adjustments based on your risk profile quiz results.
-
----
-
 ### 🔍 Universal Asset Search
 
 Search for assets worldwide:
