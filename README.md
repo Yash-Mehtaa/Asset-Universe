@@ -174,11 +174,6 @@ Every decision is framed through risk understanding.
 
 Contributions are welcome.
 
-
-git checkout -b feature/amazing-feature
-git commit -m "Add amazing feature"
-git push origin feature/amazing-feature
-
 ### Ideas for Contributions
 - More asset types  
 - News sentiment analysis  
