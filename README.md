@@ -123,25 +123,6 @@ Asset Universe is built using modern production grade technologies:
 
 ---
 
-## 📸 Screenshots
-
-### 🏠 Landing Page  
-Clean professional introduction with a clear call to action.
-
-### 💰 Budget Calculator  
-Track every dollar including income, expenses, and savings.
-
-### 📚 Learn Module  
-Deep dives into asset classes with historical context and risk analysis.
-
-### 📈 Simulator  
-Practice investing with real prices and real market movement.
-
-### 🎯 My Portfolio  
-Visual dashboard showing holdings, performance, and overall risk score.
-
----
-
 ## 🚀 Getting Started
 
 ### Prerequisites
