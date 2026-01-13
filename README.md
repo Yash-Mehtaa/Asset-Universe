@@ -139,6 +139,7 @@ Asset Universe is built using modern production grade technologies:
 ## Project Structure
 
 
+```bash
 asset-universe/
 ├── app/
 │   ├── layout.tsx
@@ -155,6 +156,7 @@ asset-universe/
 ├── types/
 └── README.md
 
+```
 ## 🎓 Educational Philosophy
 
 ### Reality First  
