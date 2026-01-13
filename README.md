@@ -231,6 +231,6 @@ If Asset Universe helped you understand investing better, give it a ⭐️ on Gi
 **Live Demo:** https://asset-universe.vercel.app
 
 <div align="center">
-Built with ❤️ and ☕ by a student who believes financial literacy should be accessible to everyone.
+Built by a student who believes financial literacy should be accessible to everyone.
 </div>
 
