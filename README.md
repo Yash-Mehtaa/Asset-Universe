@@ -53,7 +53,7 @@ Each module breaks down risk, return expectations, liquidity, and real world use
 
 ### 🎮 Real Market Simulation (No Shortcuts)
 
-The simulator uses real time market data from **Finnhub**, **CoinGecko**, and **Alpha Vantage** APIs.
+The simulator uses nearly real time market data from **Finnhub**, **CoinGecko**, and **Alpha Vantage** APIs.
 
 But here's the twist:
 
