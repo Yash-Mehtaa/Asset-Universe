@@ -1,73 +1,175 @@
-"use client";
+import Link from "next/link";
+import { Footer } from "../components/Footer";
 
 export default function TermsPage() {
+  const updated = "May 6, 2026";
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white px-6 py-12">
-      <div className="max-w-3xl mx-auto">
-        <a href="/" className="text-slate-400 hover:text-white transition-colors">← Back to Home</a>
+    <>
+      <section style={{ padding: "60px 40px 40px" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto" }}>
+          <Link href="/" style={{ fontSize: 13, color: "var(--text-3)", fontFamily: "var(--mono)" }}>
+            ← Back to home
+          </Link>
+          <h1 style={{ fontSize: "clamp(36px, 5vw, 56px)", marginTop: 24, marginBottom: 8 }}>
+            Terms of Service
+          </h1>
+          <p style={{ fontSize: 13, color: "var(--text-3)", fontFamily: "var(--mono)", marginBottom: 48 }}>
+            Last updated: {updated}
+          </p>
 
-        <h1 className="text-4xl font-bold mt-6 mb-3">Terms of Service</h1>
-        <p className="text-slate-400 mb-8">
-          Last updated: {new Date().toLocaleDateString()}
-        </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
 
-        <div className="space-y-8 text-slate-300 leading-relaxed">
-          <section>
-            <h2 className="text-xl font-semibold text-white mb-2">1. Purpose</h2>
-            <p>
-              Asset Universe is an educational platform. It is designed to help users learn about investing concepts using simulations and market data.
-              All simulations use fake money and are for learning only.
-            </p>
-          </section>
+            <div style={{ padding: "20px 24px", background: "rgba(201,168,117,0.08)", border: "1px solid rgba(201,168,117,0.2)", borderRadius: "var(--radius-lg)" }}>
+              <p style={{ fontSize: 15, color: "var(--accent)", lineHeight: 1.7 }}>
+                <strong>Important:</strong> Asset Universe is an educational simulation platform. No real money is ever involved. Nothing on this site constitutes financial, investment, tax, or legal advice. By using this site you agree to these terms in full.
+              </p>
+            </div>
 
-          <section>
-            <h2 className="text-xl font-semibold text-white mb-2">2. No financial advice</h2>
-            <p>
-              Asset Universe does not provide financial, investment, tax, or legal advice. Nothing on this site should be treated as a recommendation
-              to buy, sell, or hold any asset.
-            </p>
-          </section>
+            {[
+              {
+                n: "1",
+                title: "About Asset Universe",
+                body: `Asset Universe is a free educational platform designed to help individuals learn about investing concepts through simulated trading, educational content, and transparent AI demonstration. The platform is operated as a personal/educational project and is not a registered investment advisor, broker-dealer, financial institution, or any other regulated financial entity.
 
-          <section>
-            <h2 className="text-xl font-semibold text-white mb-2">3. Market data</h2>
-            <p>
-              Market prices and other data may be provided by third party APIs and may be delayed, incomplete, or inaccurate.
-              You agree that you will not rely on this data for real trading or investment decisions.
-            </p>
-          </section>
+All trading on Asset Universe uses simulated (fake) currency. No real money is ever deposited, held, transferred, or traded on this platform. Any reference to "buying," "selling," "investing," or "portfolios" refers exclusively to simulated activity for educational purposes.`
+              },
+              {
+                n: "2",
+                title: "Not financial advice",
+                body: `Nothing on Asset Universe — including but not limited to price data, simulated returns, AI agent decisions, educational content, strategy descriptions, or portfolio performance — constitutes financial, investment, tax, legal, or any other professional advice.
 
-          <section>
-            <h2 className="text-xl font-semibold text-white mb-2">4. Risk and responsibility</h2>
-            <p>
-              Investing involves risk. You are fully responsible for your decisions and outcomes. Asset Universe is not liable for any loss, damage,
-              or decisions made based on the information or simulations on this site.
-            </p>
-          </section>
+Asset Universe does not recommend any specific asset, strategy, or course of action. All content is provided for educational and informational purposes only. You should not make any real-world financial decision based on anything displayed on this platform.
 
-          <section>
-            <h2 className="text-xl font-semibold text-white mb-2">5. Acceptable use</h2>
-            <p>
-              You agree not to misuse the platform. This includes attempting to disrupt the site, reverse engineer services, scrape data excessively,
-              or use the platform in a way that violates any law.
-            </p>
-          </section>
+Always consult a qualified, licensed financial advisor before making any real investment decision.`
+              },
+              {
+                n: "3",
+                title: "Market data and accuracy",
+                body: `Asset Universe displays market data sourced from third-party APIs including Finnhub, CoinGecko, and CoinPaprika. This data is provided "as is" with no guarantee of accuracy, completeness, or timeliness.
 
-          <section>
-            <h2 className="text-xl font-semibold text-white mb-2">6. Changes</h2>
-            <p>
-              We may modify or remove features at any time. We may update these Terms from time to time. Continued use of the site means you accept
-              the updated Terms.
-            </p>
-          </section>
+Prices for US stocks and ETFs are real-time or near real-time via Finnhub's free tier. International market data and some asset classes may be delayed by up to 15 minutes or more. Cryptocurrency prices are sourced from CoinGecko and CoinPaprika and may differ from prices on individual exchanges.
 
-          <section>
-            <h2 className="text-xl font-semibold text-white mb-2">7. Contact</h2>
-            <p>
-              If you have questions, you can contact the project owner through the profile or project repository where the app is hosted.
-            </p>
-          </section>
+You agree that you will not rely on any data displayed on Asset Universe for real trading decisions. Asset Universe is not liable for any loss, financial or otherwise, resulting from reliance on data displayed on this platform.
+
+Market data attribution: Finnhub (finnhub.io) · CoinGecko (coingecko.com) · CoinPaprika (coinpaprika.com)`
+              },
+              {
+                n: "4",
+                title: "AI investors — disclaimer",
+                body: `Asset Universe features three autonomous AI agents ("AI Investors") that make simulated trading decisions using the Anthropic Claude API and real market price data. These agents operate on simulated capital only and do not trade real assets.
+
+The AI agents' decisions, strategies, performance, and reasoning are displayed for educational purposes only. Past performance of the AI agents — whether positive or negative — does not predict or guarantee any future performance, and does not reflect what would happen with real money in real markets.
+
+The AI agents' strategy descriptions, trade rationale, and self-review decisions are generated by a large language model (Claude by Anthropic) and may contain errors, oversimplifications, or statements that are not suitable for real investment decisions. Do not use AI agent decisions as the basis for any real financial action.`
+              },
+              {
+                n: "5",
+                title: "Simulated trading — no real money",
+                body: `All trading functionality on Asset Universe uses simulated currency stored in your browser's local storage. This simulated currency:
+
+— Has no real-world monetary value
+— Cannot be withdrawn, transferred, or exchanged for real money or assets
+— Is not backed by any financial institution or guarantee
+— May be reset or lost if you clear your browser data
+
+Asset Universe does not hold, process, or transmit any real financial assets or currencies on your behalf.`
+              },
+              {
+                n: "6",
+                title: "No liability",
+                body: `To the fullest extent permitted by applicable law, Asset Universe and its operators are not liable for:
+
+— Any financial loss, damage, or harm resulting from use of this platform
+— Any inaccuracy, delay, or error in market data displayed
+— Any decision made based on AI agent outputs, educational content, or simulated performance
+— Any technical failure, data loss, or interruption of service
+— Any third-party content or services linked from this platform
+
+Asset Universe is provided "as is" and "as available" without any warranty, express or implied, including warranties of merchantability, fitness for a particular purpose, or non-infringement.`
+              },
+              {
+                n: "7",
+                title: "Acceptable use",
+                body: `By using Asset Universe you agree not to:
+
+— Use the platform for any unlawful purpose
+— Attempt to gain unauthorized access to any part of the platform or its infrastructure
+— Scrape, harvest, or systematically collect data from the platform in violation of API terms
+— Attempt to reverse engineer, decompile, or disassemble any part of the platform
+— Interfere with or disrupt the platform's operation or the servers and networks connected to it
+— Use the platform to distribute malware, spam, or harmful content
+— Misrepresent the platform's capabilities or present simulated results as real financial performance`
+              },
+              {
+                n: "8",
+                title: "Intellectual property",
+                body: `The Asset Universe platform code, design, and original content are the property of the project operators. Market data displayed on the platform remains the property of the respective data providers (Finnhub, CoinGecko, CoinPaprika) and is subject to their respective terms of service.
+
+You may not reproduce, redistribute, or commercially exploit any content from this platform without explicit written permission.`
+              },
+              {
+                n: "9",
+                title: "Third-party services",
+                body: `Asset Universe uses the following third-party services. By using Asset Universe you acknowledge that your use is also subject to these services' own terms:
+
+— Anthropic Claude API (anthropic.com) — powers AI agent reasoning
+— Finnhub (finnhub.io) — provides stock and ETF market data
+— CoinGecko (coingecko.com) — provides cryptocurrency market data
+— CoinPaprika (coinpaprika.com) — provides cryptocurrency market data
+— Vercel (vercel.com) — hosts the frontend
+— Railway (railway.app) — hosts the AI backend
+
+Asset Universe is not affiliated with, endorsed by, or sponsored by any of these services.`
+              },
+              {
+                n: "10",
+                title: "Privacy",
+                body: `Asset Universe does not require account creation or collect personal information. Simulated portfolio data is stored locally in your browser and is not transmitted to or stored on any server.
+
+The AI backend (Railway) logs standard server access data (IP addresses, timestamps, endpoints accessed) for operational purposes. This data is not sold or shared with third parties.`
+              },
+              {
+                n: "11",
+                title: "Changes to these terms",
+                body: `We may update these Terms of Service at any time. Changes will be reflected in the "Last updated" date at the top of this page. Continued use of the platform after changes are posted constitutes acceptance of the updated terms.`
+              },
+              {
+                n: "12",
+                title: "Governing law",
+                body: `These terms are governed by and construed in accordance with applicable law. Any disputes arising from use of this platform shall be resolved in accordance with applicable jurisdiction.`
+              },
+              {
+                n: "13",
+                title: "Contact",
+                body: `For questions about these terms, contact the project through the GitHub repository at github.com/Yash-Mehtaa/Asset-Universe or github.com/Yash-Mehtaa/asset-universe-ai.`
+              },
+            ].map(s => (
+              <section key={s.n}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 16 }}>
+                  <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--accent)" }}>{s.n}.</span>
+                  <h2 style={{ fontSize: 22 }}>{s.title}</h2>
+                </div>
+                <div style={{ paddingLeft: 28 }}>
+                  {s.body.split("\n\n").map((para, i) => (
+                    <p key={i} style={{ fontSize: 15, color: "var(--text-2)", lineHeight: 1.75, marginBottom: 14 }}>
+                      {para}
+                    </p>
+                  ))}
+                </div>
+              </section>
+            ))}
+
+            <div style={{ padding: "20px 24px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", marginTop: 8 }}>
+              <p style={{ fontSize: 13, color: "var(--text-3)", lineHeight: 1.7, fontFamily: "var(--mono)" }}>
+                Asset Universe is an educational project. It is not a registered investment advisor, broker, or financial institution. No real money is ever involved. Market data is provided by third-party APIs and may be delayed or inaccurate. AI agent decisions are for demonstration only. Nothing on this platform constitutes financial advice.
+              </p>
+            </div>
+
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
+      <Footer />
+    </>
   );
 }
