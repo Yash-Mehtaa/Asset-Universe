@@ -71,13 +71,14 @@ function MiniChart({ points, isUp }: { points: PerfPoint[]; isUp: boolean }) {
   );
 }
 
-function AgentCard({ agent }: { agent: Agent }) {
+function AgentCard({ agent, onRun }: { agent: Agent; onRun: () => void }) {
   const meta = META[agent.name as keyof typeof META];
   const [tab, setTab] = useState<"overview" | "trades" | "decisions">("overview");
   const [trades, setTrades] = useState<Trade[]>([]);
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [perf, setPerf] = useState<PerfPoint[]>([]);
+  const [running, setRunning] = useState(false);
   const isUp = agent.pnl_pct >= 0;
 
   useEffect(() => {
@@ -93,6 +94,16 @@ function AgentCard({ agent }: { agent: Agent }) {
       setPerf((p.series || []).slice(-30));
     });
   }, [agent.name]);
+
+  const handleRun = async () => {
+    setRunning(true);
+    try {
+      await fetch(`${API}/api/run/${agent.name}`, { method: "POST" });
+      setTimeout(() => { onRun(); setRunning(false); }, 1500);
+    } catch {
+      setRunning(false);
+    }
+  };
 
   return (
     <article style={{
@@ -243,7 +254,20 @@ function AgentCard({ agent }: { agent: Agent }) {
         <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span className="live-dot" /> LIVE
         </span>
-        <span>{agent.last_trade_at ? `Last trade ${timeAgo(agent.last_trade_at)}` : "Awaiting first cycle"}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span>{agent.last_trade_at ? `Last trade ${timeAgo(agent.last_trade_at)}` : "Awaiting first cycle"}</span>
+          <button onClick={handleRun} disabled={running} style={{
+            padding: "4px 12px", borderRadius: "var(--radius)",
+            background: running ? "var(--surface-2)" : "var(--accent-soft)",
+            border: `1px solid ${running ? "var(--border)" : "var(--accent-strong)"}`,
+            color: running ? "var(--text-3)" : "var(--accent)",
+            fontSize: 11, cursor: running ? "not-allowed" : "pointer",
+            fontFamily: "var(--mono)", fontWeight: 700, letterSpacing: "0.05em",
+            transition: "all 0.2s",
+          }}>
+            {running ? "RUNNING..." : "RUN NOW"}
+          </button>
+        </div>
       </footer>
     </article>
   );
@@ -271,10 +295,11 @@ export default function AIInvestorsPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const load = () => {
+    fetch(`${API}/api/agents`).then(r => r.json()).then(setAgents).catch(() => {}).finally(() => setLoading(false));
+  };
+
   useEffect(() => {
-    const load = () => {
-      fetch(`${API}/api/agents`).then(r => r.json()).then(setAgents).catch(() => {}).finally(() => setLoading(false));
-    };
     load();
     const id = setInterval(load, 30000);
     return () => clearInterval(id);
@@ -330,7 +355,7 @@ export default function AIInvestorsPage() {
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 20 }}>
-            {agents.map(a => <AgentCard key={a.id} agent={a} />)}
+            {agents.map(a => <AgentCard key={a.id} agent={a} onRun={load} />)}
           </div>
         )}
       </section>
