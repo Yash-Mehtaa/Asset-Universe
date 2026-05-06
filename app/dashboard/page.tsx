@@ -1,217 +1,206 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import Link from "next/link";
 
-type Transaction = { id: number; name: string; amount: number; type: "income" | "expense"; category: string; recurring: boolean };
+type Transaction = { id: number; desc: string; amount: number; category: string; type: "income" | "expense" };
 
-export default function Dashboard() {
-  const [income, setIncome] = useState("");
-  const [expenses, setExpenses] = useState("");
-  const [emergency, setEmergency] = useState("");
+const CATEGORIES = ["Housing", "Food", "Transport", "Entertainment", "Healthcare", "Other"];
+const CAT_COLORS: Record<string, string> = {
+  Housing: "#a78bfa", Food: "#38bdf8", Transport: "#34d399",
+  Entertainment: "#fbbf24", Healthcare: "#f87171", Other: "#94a3b8",
+};
+
+export default function DashboardPage() {
+  const [income, setIncome] = useState(0);
+  const [expenses, setExpenses] = useState(0);
+  const [emergency, setEmergency] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [showAddTransaction, setShowAddTransaction] = useState(false);
-  const [newTransaction, setNewTransaction] = useState({ name: "", amount: "", type: "expense" as "income" | "expense", category: "other", recurring: false });
+  const [newDesc, setNewDesc] = useState("");
+  const [newAmount, setNewAmount] = useState("");
+  const [newCat, setNewCat] = useState("Other");
+  const [newType, setNewType] = useState<"income" | "expense">("expense");
 
-  useEffect(() => {
-    const saved = localStorage.getItem("budget");
-    if (saved) {
-      const data = JSON.parse(saved);
-      setIncome(data.income || "");
-      setExpenses(data.expenses || "");
-      setEmergency(data.emergency || "");
-    }
-    const savedTransactions = localStorage.getItem("transactions");
-    if (savedTransactions) {
-      setTransactions(JSON.parse(savedTransactions));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("budget", JSON.stringify({ income, expenses, emergency }));
-  }, [income, expenses, emergency]);
-
-  useEffect(() => {
-    localStorage.setItem("transactions", JSON.stringify(transactions));
-  }, [transactions]);
+  const investable = Math.max(0, income - expenses - emergency);
+  const investPct = income > 0 ? (investable / income) * 100 : 0;
 
   const addTransaction = () => {
-    if (!newTransaction.name || !newTransaction.amount) return;
-    setTransactions([...transactions, { ...newTransaction, id: Date.now(), amount: parseFloat(newTransaction.amount) }]);
-    setNewTransaction({ name: "", amount: "", type: "expense", category: "other", recurring: false });
-    setShowAddTransaction(false);
+    if (!newDesc || !newAmount) return;
+    const amt = parseFloat(newAmount);
+    if (isNaN(amt)) return;
+    setTransactions(t => [...t, { id: Date.now(), desc: newDesc, amount: amt, category: newCat, type: newType }]);
+    if (newType === "income") setIncome(i => i + amt);
+    else setExpenses(e => e + amt);
+    setNewDesc(""); setNewAmount("");
   };
 
-  const deleteTransaction = (id: number) => {
-    setTransactions(transactions.filter(t => t.id !== id));
-  };
+  const byCategory = CATEGORIES.map(c => ({
+    cat: c,
+    total: transactions.filter(t => t.category === c && t.type === "expense").reduce((s, t) => s + t.amount, 0),
+  })).filter(c => c.total > 0);
 
-  const totalIncome = transactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.amount, 0) + (parseFloat(income) || 0);
-  const totalExpenses = transactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.amount, 0) + (parseFloat(expenses) || 0);
-  const emergencyFund = parseFloat(emergency) || 0;
-  const investable = Math.max(0, totalIncome - totalExpenses - emergencyFund);
-
-  const categories = ["rent", "food", "transport", "entertainment", "utilities", "shopping", "health", "other"];
-  const categoryIcons: Record<string, string> = { rent: "🏠", food: "🍔", transport: "🚗", entertainment: "🎬", utilities: "💡", shopping: "🛒", health: "💊", other: "📦" };
-
-  const expensesByCategory = transactions.filter(t => t.type === "expense").reduce((acc, t) => {
-    acc[t.category] = (acc[t.category] || 0) + t.amount;
-    return acc;
-  }, {} as Record<string, number>);
+  const maxCat = Math.max(...byCategory.map(c => c.total), 1);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
-      <nav className="border-b border-slate-700 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <a href="/" className="font-semibold">Asset Universe</a>
-          <div className="flex gap-6 text-sm">
-            <a href="/dashboard" className="text-emerald-400">Budget</a>
-            <a href="/learn" className="text-slate-400">Learn</a>
-            <a href="/simulate" className="text-slate-400">Simulate</a>
-            <a href="/my-portfolio" className="text-slate-400">My Portfolio</a>
-            <a href="/profile" className="text-slate-400">Profile</a>
-          </div>
+    <div style={{ position: "relative", zIndex: 1 }}>
+      <div className="section animate-fadeup">
+
+        {/* Header */}
+        <div style={{ marginBottom: 8 }}>
+          <span className="badge tag-neutral">STEP 1 OF 4</span>
         </div>
-      </nav>
+        <h1 style={{ fontSize: "clamp(28px, 4vw, 48px)", marginBottom: 12 }}>
+          <span className="gradient-text">Budget Calculator</span>
+        </h1>
+        <p style={{ color: "var(--text2)", marginBottom: 48, maxWidth: 480 }}>
+          Figure out how much you can safely invest each month. Optional — skip if you already know your budget.
+        </p>
 
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        {/* Header with Skip Option */}
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">💸 Budget Calculator</h1>
-            <p className="text-slate-400">Figure out how much you can safely invest each month.</p>
-            <p className="text-slate-500 text-sm mt-1">This step is optional, you can skip anytime if you already know your budget.</p>
-          </div>
-          <a href="/learn" className="bg-slate-700 hover:bg-slate-600 text-white font-medium px-4 py-2 rounded-lg text-sm">Skip to Learn →</a>
-        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
 
-        {/* Main Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/30 rounded-2xl p-5">
-            <div className="text-emerald-400 text-sm font-medium mb-1">💰 Total Income</div>
-            <div className="text-2xl font-bold">${totalIncome.toLocaleString()}</div>
-          </div>
-          <div className="bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded-2xl p-5">
-            <div className="text-red-400 text-sm font-medium mb-1">💸 Total Expenses</div>
-            <div className="text-2xl font-bold">${totalExpenses.toLocaleString()}</div>
-          </div>
-          <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/30 rounded-2xl p-5">
-            <div className="text-blue-400 text-sm font-medium mb-1">🛡️ Emergency Fund</div>
-            <div className="text-2xl font-bold">${emergencyFund.toLocaleString()}</div>
-          </div>
-          <div className="bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 rounded-2xl p-5">
-            <div className="text-cyan-400 text-sm font-medium mb-1">📈 Can Invest</div>
-            <div className="text-2xl font-bold">${investable.toLocaleString()}</div>
-          </div>
-        </div>
+          {/* Left: inputs */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Quick Budget Setup */}
-          <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6">
-            <h2 className="text-xl font-semibold mb-4">⚡ Quick Setup</h2>
-            <p className="text-slate-400 text-sm mb-4">Enter your monthly numbers for a quick calculation.</p>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">Monthly Income (after tax)</label>
-                <input type="number" value={income} onChange={e => setIncome(e.target.value)} placeholder="5000" className="w-full bg-slate-700 border border-slate-600 rounded-lg py-2 px-4" />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">Monthly Expenses</label>
-                <input type="number" value={expenses} onChange={e => setExpenses(e.target.value)} placeholder="3000" className="w-full bg-slate-700 border border-slate-600 rounded-lg py-2 px-4" />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">Emergency Fund (optional)</label>
-                <input type="number" value={emergency} onChange={e => setEmergency(e.target.value)} placeholder="500" className="w-full bg-slate-700 border border-slate-600 rounded-lg py-2 px-4" />
-              </div>
-            </div>
-          </div>
-
-          {/* Category Breakdown */}
-          <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6">
-            <h2 className="text-xl font-semibold mb-4">📊 Spending by Category</h2>
-            {Object.keys(expensesByCategory).length > 0 ? (
-              <div className="space-y-3">
-                {Object.entries(expensesByCategory).sort((a, b) => b[1] - a[1]).map(([cat, amount]) => (
-                  <div key={cat} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span>{categoryIcons[cat]}</span>
-                      <span className="capitalize">{cat}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-24 bg-slate-700 rounded-full h-2">
-                        <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${Math.min(100, (amount / totalExpenses) * 100)}%` }}></div>
-                      </div>
-                      <span className="text-sm w-16 text-right">${amount.toLocaleString()}</span>
+            {/* Quick setup */}
+            <div className="card">
+              <h2 style={{ fontSize: 16, marginBottom: 20, fontFamily: "Syne, sans-serif" }}>⚡ Quick Setup</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {[
+                  { label: "Monthly Income (after tax)", val: income, set: setIncome },
+                  { label: "Monthly Expenses", val: expenses, set: setExpenses },
+                  { label: "Emergency Fund (optional)", val: emergency, set: setEmergency },
+                ].map(f => (
+                  <div key={f.label}>
+                    <label style={{ fontSize: 12, color: "var(--text3)", display: "block", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>
+                      {f.label}
+                    </label>
+                    <div style={{ position: "relative" }}>
+                      <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text3)", fontSize: 14 }}>$</span>
+                      <input
+                        type="number" min="0"
+                        value={f.val || ""}
+                        onChange={e => f.set(parseFloat(e.target.value) || 0)}
+                        style={{ paddingLeft: 28 }}
+                        placeholder="0"
+                      />
                     </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-slate-400 text-sm">Add transactions to see category breakdown</p>
-            )}
-          </div>
-        </div>
-
-        {/* Transactions Section */}
-        <div className="mt-8 bg-slate-800/50 border border-slate-700 rounded-2xl p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">📝 Transactions</h2>
-            <button onClick={() => setShowAddTransaction(!showAddTransaction)} className="bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-lg text-sm font-medium">+ Add Transaction</button>
-          </div>
-
-          {showAddTransaction && (
-            <div className="bg-slate-700/50 rounded-xl p-4 mb-4">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                <input type="text" placeholder="Name" value={newTransaction.name} onChange={e => setNewTransaction({ ...newTransaction, name: e.target.value })} className="bg-slate-700 border border-slate-600 rounded-lg py-2 px-3 text-sm" />
-                <input type="number" placeholder="Amount" value={newTransaction.amount} onChange={e => setNewTransaction({ ...newTransaction, amount: e.target.value })} className="bg-slate-700 border border-slate-600 rounded-lg py-2 px-3 text-sm" />
-                <select value={newTransaction.type} onChange={e => setNewTransaction({ ...newTransaction, type: e.target.value as "income" | "expense" })} className="bg-slate-700 border border-slate-600 rounded-lg py-2 px-3 text-sm">
-                  <option value="expense">Expense</option>
-                  <option value="income">Income</option>
-                </select>
-                <select value={newTransaction.category} onChange={e => setNewTransaction({ ...newTransaction, category: e.target.value })} className="bg-slate-700 border border-slate-600 rounded-lg py-2 px-3 text-sm">
-                  {categories.map(cat => <option key={cat} value={cat} className="capitalize">{cat}</option>)}
-                </select>
-                <button onClick={addTransaction} className="bg-emerald-500 hover:bg-emerald-600 rounded-lg text-sm font-medium">Add</button>
-              </div>
-              <label className="flex items-center gap-2 mt-3 text-sm text-slate-400">
-                <input type="checkbox" checked={newTransaction.recurring} onChange={e => setNewTransaction({ ...newTransaction, recurring: e.target.checked })} className="rounded" />
-                Recurring monthly
-              </label>
             </div>
-          )}
 
-          {transactions.length > 0 ? (
-            <div className="space-y-2">
-              {transactions.map(t => (
-                <div key={t.id} className="flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
-                  <div className="flex items-center gap-3">
-                    <span>{categoryIcons[t.category]}</span>
-                    <div>
-                      <div className="font-medium">{t.name}</div>
-                      <div className="text-xs text-slate-400 capitalize">{t.category} {t.recurring && "• Recurring"}</div>
-                    </div>
+            {/* Add transaction */}
+            <div className="card">
+              <h2 style={{ fontSize: 16, marginBottom: 20, fontFamily: "Syne, sans-serif" }}>+ Add Transaction</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Description"/>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div style={{ position: "relative" }}>
+                    <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text3)" }}>$</span>
+                    <input type="number" min="0" value={newAmount} onChange={e => setNewAmount(e.target.value)} style={{ paddingLeft: 28 }} placeholder="0"/>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className={`font-semibold ${t.type === "income" ? "text-emerald-400" : "text-red-400"}`}>
-                      {t.type === "income" ? "+" : "-"}${t.amount.toLocaleString()}
-                    </span>
-                    <button onClick={() => deleteTransaction(t.id)} className="text-slate-500 hover:text-red-400 text-sm">×</button>
+                  <select value={newCat} onChange={e => setNewCat(e.target.value)}>
+                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {(["income", "expense"] as const).map(t => (
+                    <button key={t} onClick={() => setNewType(t)} style={{
+                      flex: 1, padding: "8px 0", borderRadius: 8, fontSize: 13, fontWeight: 700,
+                      background: newType === t ? (t === "income" ? "var(--green-dim)" : "var(--red-dim)") : "var(--surface)",
+                      border: `1px solid ${newType === t ? (t === "income" ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)") : "var(--border)"}`,
+                      color: newType === t ? (t === "income" ? "var(--green)" : "var(--red)") : "var(--text2)",
+                      textTransform: "capitalize", transition: "all 0.2s",
+                    }}>{t}</button>
+                  ))}
+                </div>
+                <button className="btn-primary" onClick={addTransaction} style={{ justifyContent: "center" }}>Add</button>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: results */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+            {/* Summary cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {[
+                { label: "Total Income", value: income, icon: "💰", color: "var(--green)" },
+                { label: "Total Expenses", value: expenses, icon: "💸", color: "var(--red)" },
+                { label: "Emergency Fund", value: emergency, icon: "🛡️", color: "var(--blue)" },
+                { label: "Can Invest", value: investable, icon: "📈", color: "var(--purple)" },
+              ].map(s => (
+                <div key={s.label} className="stat-card">
+                  <div className="label">{s.icon} {s.label}</div>
+                  <div className="value" style={{ color: s.color, fontSize: 18 }}>
+                    ${s.value.toLocaleString()}
                   </div>
                 </div>
               ))}
             </div>
-          ) : (
-            <p className="text-slate-400 text-sm text-center py-4">No transactions yet. Add some to track your spending!</p>
-          )}
+
+            {/* Investable highlight */}
+            <div className="card" style={{ borderColor: investable > 0 ? "var(--purple-border)" : "var(--border)", background: investable > 0 ? "var(--purple-dim)" : "var(--surface)", textAlign: "center" }}>
+              <div style={{ fontSize: 13, color: "var(--text3)", marginBottom: 8, fontFamily: "DM Mono, monospace" }}>MONTHLY INVESTABLE AMOUNT</div>
+              <div style={{ fontSize: 48, fontWeight: 900, fontFamily: "Syne, sans-serif", color: investable > 0 ? "var(--purple)" : "var(--text3)", letterSpacing: "-2px" }}>
+                ${investable.toLocaleString()}
+              </div>
+              {income > 0 && (
+                <div style={{ fontSize: 13, color: "var(--text2)", marginTop: 8 }}>
+                  {investPct.toFixed(1)}% of income
+                </div>
+              )}
+              {/* Bar */}
+              <div style={{ marginTop: 16, height: 6, borderRadius: 3, background: "var(--surface2)", overflow: "hidden" }}>
+                <div style={{ height: "100%", borderRadius: 3, background: "linear-gradient(90deg, var(--purple), var(--blue))", width: `${Math.min(investPct, 100)}%`, transition: "width 0.5s ease" }}/>
+              </div>
+            </div>
+
+            {/* Category breakdown */}
+            {byCategory.length > 0 && (
+              <div className="card">
+                <h3 style={{ fontSize: 14, marginBottom: 16, fontFamily: "Syne, sans-serif" }}>📊 Spending by Category</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {byCategory.map(c => (
+                    <div key={c.cat}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, color: "var(--text2)" }}>{c.cat}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: CAT_COLORS[c.cat] }}>${c.total.toLocaleString()}</span>
+                      </div>
+                      <div style={{ height: 4, borderRadius: 2, background: "var(--surface2)", overflow: "hidden" }}>
+                        <div style={{ height: "100%", borderRadius: 2, background: CAT_COLORS[c.cat], width: `${(c.total / maxCat) * 100}%`, transition: "width 0.4s ease" }}/>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Transactions */}
+            {transactions.length > 0 && (
+              <div className="card">
+                <h3 style={{ fontSize: 14, marginBottom: 16, fontFamily: "Syne, sans-serif" }}>📝 Transactions</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 200, overflowY: "auto" }}>
+                  {transactions.map(t => (
+                    <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "var(--surface)", borderRadius: 8, border: "1px solid var(--border)" }}>
+                      <div>
+                        <span style={{ fontSize: 13, color: "var(--text)" }}>{t.desc}</span>
+                        <span style={{ fontSize: 11, color: "var(--text3)", marginLeft: 8 }}>{t.category}</span>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: t.type === "income" ? "var(--green)" : "var(--red)" }}>
+                        {t.type === "income" ? "+" : "-"}${t.amount.toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Result & CTA */}
-        <div className="mt-8 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 rounded-2xl p-8 text-center">
-          <div className="text-slate-400 mb-2">Your monthly investable amount</div>
-          <div className="text-5xl font-bold text-emerald-400 mb-4">${investable.toLocaleString()}</div>
-          <p className="text-slate-400 text-sm mb-6">This is what you can safely invest after expenses and emergency savings.</p>
-          <div className="flex gap-4 justify-center">
-            <a href="/learn" className="bg-emerald-500 hover:bg-emerald-600 font-semibold py-3 px-6 rounded-xl">Learn About Assets →</a>
-            <a href="/simulate" className="bg-slate-700 hover:bg-slate-600 font-medium py-3 px-6 rounded-xl">Skip to Simulator →</a>
-          </div>
+        {/* CTAs */}
+        <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
+          <Link href="/learn" className="btn-primary">Learn About Assets →</Link>
+          <Link href="/simulate" className="btn-ghost">Skip to Simulator</Link>
         </div>
       </div>
     </div>

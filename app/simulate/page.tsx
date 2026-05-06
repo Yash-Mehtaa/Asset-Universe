@@ -1,246 +1,190 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import Link from "next/link";
 
-type Asset = { id: string; symbol: string; name: string; price: number; change: number; type: string };
-type Simulation = { id: number; asset: string; symbol: string; amount: number; startPrice: number; type: string; buyDate: string };
-
-const categories = [
-  { id: "stocks", name: "Stocks", icon: "📈", desc: "Apple, Google, Tesla, etc." },
-  { id: "etfs", name: "ETFs", icon: "📊", desc: "S&P 500, Nasdaq, Bonds, etc." },
-  { id: "crypto", name: "Crypto", icon: "₿", desc: "Bitcoin, Ethereum, Solana, etc." },
-  { id: "bonds", name: "Bonds", icon: "🏛️", desc: "Treasury, Corporate, Municipal" },
-  { id: "commodities", name: "Commodities", icon: "🥇", desc: "Gold, Silver, Oil, etc." },
-  { id: "custom", name: "Custom Search", icon: "🔍", desc: "Search anything investable" },
+const ASSET_TYPES = [
+  { id: "stocks", icon: "📈", label: "Stocks", sub: "Apple, Google, Tesla...", accent: "#a78bfa" },
+  { id: "etfs", icon: "📊", label: "ETFs", sub: "S&P 500, Nasdaq, Bonds...", accent: "#38bdf8" },
+  { id: "crypto", icon: "₿", label: "Crypto", sub: "Bitcoin, Ethereum, Solana...", accent: "#fbbf24" },
+  { id: "bonds", icon: "🏛️", label: "Bonds", sub: "Treasury, Corporate, Municipal", accent: "#34d399" },
+  { id: "commodities", icon: "🥇", label: "Commodities", sub: "Gold, Silver, Oil...", accent: "#f97316" },
+  { id: "custom", icon: "🔍", label: "Custom Search", sub: "Search anything investable", accent: "#94a3b8" },
 ];
 
-export default function Simulate() {
-  const [category, setCategory] = useState("");
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [amount, setAmount] = useState("");
-  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
-  const [simulations, setSimulations] = useState<Simulation[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Asset[]>([]);
-  const [searching, setSearching] = useState(false);
+const POPULAR: Record<string, { symbol: string; name: string }[]> = {
+  stocks: [
+    { symbol: "AAPL", name: "Apple" },
+    { symbol: "GOOGL", name: "Alphabet" },
+    { symbol: "TSLA", name: "Tesla" },
+    { symbol: "NVDA", name: "NVIDIA" },
+    { symbol: "MSFT", name: "Microsoft" },
+    { symbol: "META", name: "Meta" },
+  ],
+  etfs: [
+    { symbol: "SPY", name: "S&P 500 ETF" },
+    { symbol: "QQQ", name: "Nasdaq 100" },
+    { symbol: "VTI", name: "Total Market" },
+    { symbol: "IWM", name: "Russell 2000" },
+  ],
+  crypto: [
+    { symbol: "BTC", name: "Bitcoin" },
+    { symbol: "ETH", name: "Ethereum" },
+    { symbol: "SOL", name: "Solana" },
+    { symbol: "BNB", name: "BNB" },
+  ],
+  bonds: [
+    { symbol: "TLT", name: "20-Year Treasury" },
+    { symbol: "BND", name: "Total Bond Market" },
+    { symbol: "AGG", name: "Core Bond ETF" },
+  ],
+  commodities: [
+    { symbol: "GLD", name: "Gold ETF" },
+    { symbol: "SLV", name: "Silver ETF" },
+    { symbol: "USO", name: "Oil ETF" },
+  ],
+  custom: [],
+};
 
-  useEffect(() => {
-    const saved = localStorage.getItem("simulations");
-    if (saved) setSimulations(JSON.parse(saved));
-  }, []);
+export default function SimulatePage() {
+  const [selected, setSelected] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    localStorage.setItem("simulations", JSON.stringify(simulations));
-  }, [simulations]);
-
-  useEffect(() => {
-    if (!category) return;
-    setLoading(true);
-    setSearchResults([]);
-    setSelectedAsset(null);
-    fetch(`/api/prices?category=${category}`)
-      .then(res => res.json())
-      .then(data => { setAssets(data.assets || []); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [category]);
-
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    setSearching(true);
-    setSearchResults([]);
-    try {
-      const res = await fetch(`/api/search?q=${searchQuery.toUpperCase()}`);
-      const data = await res.json();
-      setSearchResults(data.results || []);
-    } catch (e) {
-      setSearchResults([]);
-    }
-    setSearching(false);
-  };
-
-  const handleSelectAsset = (asset: Asset) => {
-    setSelectedAsset(asset);
-    setSearchResults([]);
-    setSearchQuery("");
-  };
-
-  const handleSimulate = () => {
-    if (!amount || !selectedAsset) return;
-
-    const buyDate = new Date().toISOString();
-
-    setSimulations([
-      ...simulations,
-      {
-        id: Date.now(),
-        asset: selectedAsset.name,
-        symbol: selectedAsset.symbol,
-        amount: parseFloat(amount),
-        startPrice: selectedAsset.price,
-        type: selectedAsset.type,
-        buyDate: buyDate
-      }
-    ]);
-
-    setAmount("");
-    setSelectedAsset(null);
-  };
-
-  const handleDelete = (id: number) => {
-    setSimulations(simulations.filter(s => s.id !== id));
-  };
-
-  const totalInvested = simulations.reduce((sum, s) => sum + s.amount, 0);
-  const totalValue = simulations.reduce((sum, s) => {
-    const current = assets.find(a => a.symbol === s.symbol)?.price || s.startPrice;
-    return sum + (s.amount / s.startPrice) * current;
-  }, 0);
-  const totalGain = totalValue - totalInvested;
+  const cfg = selected ? ASSET_TYPES.find(a => a.id === selected) : null;
+  const popular = selected ? (POPULAR[selected] || []) : [];
+  const filtered = search
+    ? popular.filter(p => p.symbol.toLowerCase().includes(search.toLowerCase()) || p.name.toLowerCase().includes(search.toLowerCase()))
+    : popular;
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
-      <nav className="border-b border-slate-700 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <a href="/" className="font-semibold">Asset Universe</a>
-          <div className="flex gap-6 text-sm">
-            <a href="/dashboard" className="text-slate-400">Budget</a>
-            <a href="/learn" className="text-slate-400">Learn</a>
-            <a href="/simulate" className="text-emerald-400">Simulate</a>
-            <a href="/my-portfolio" className="text-slate-400 hover:text-white">My Portfolio</a>
-            <a href="/profile" className="text-slate-400">Profile</a>
-          </div>
-        </div>
-      </nav>
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <h1 className="text-3xl font-bold mb-2">Investment Simulator</h1>
-        <p className="text-slate-400 mb-8">Practice with fake money, real market prices.</p>
+    <div style={{ position: "relative", zIndex: 1 }}>
+      <div className="section animate-fadeup">
 
-        {!category ? (
+        <div style={{ marginBottom: 8 }}>
+          <span className="badge tag-neutral">STEP 3 OF 4</span>
+        </div>
+        <h1 style={{ fontSize: "clamp(28px, 4vw, 48px)", marginBottom: 12 }}>
+          <span className="gradient-text">Investment Simulator</span>
+        </h1>
+        <p style={{ color: "var(--text2)", maxWidth: 480, marginBottom: 56 }}>
+          Practice with fake money and real market prices. Zero risk, full realism.
+        </p>
+
+        {/* Asset type picker */}
+        {!selected ? (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Choose investment type</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {categories.map(cat => (
-                <button key={cat.id} onClick={() => setCategory(cat.id)} className="bg-slate-800 border border-slate-700 hover:border-emerald-500 rounded-xl p-6 text-left transition-all">
-                  <div className="text-3xl mb-2">{cat.icon}</div>
-                  <div className="font-semibold">{cat.name}</div>
-                  <div className="text-sm text-slate-400">{cat.desc}</div>
+            <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 20, fontFamily: "DM Mono, monospace", letterSpacing: "1px" }}>
+              CHOOSE INVESTMENT TYPE
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
+              {ASSET_TYPES.map(a => (
+                <button key={a.id} onClick={() => setSelected(a.id)} style={{
+                  background: "var(--surface)",
+                  border: `1px solid var(--border)`,
+                  borderRadius: "var(--radius)",
+                  padding: "28px 24px",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = a.accent;
+                  (e.currentTarget as HTMLButtonElement).style.background = `${a.accent}08`;
+                  (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)";
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 0 30px ${a.accent}20`;
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)";
+                  (e.currentTarget as HTMLButtonElement).style.background = "var(--surface)";
+                  (e.currentTarget as HTMLButtonElement).style.transform = "none";
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
+                }}>
+                  <div style={{ fontSize: 32, marginBottom: 14 }}>{a.icon}</div>
+                  <div style={{ fontWeight: 800, fontSize: 16, fontFamily: "Syne, sans-serif", marginBottom: 6, color: "var(--text)" }}>{a.label}</div>
+                  <div style={{ fontSize: 12, color: "var(--text3)" }}>{a.sub}</div>
                 </button>
               ))}
             </div>
           </div>
         ) : (
-          <div>
-            <button onClick={() => { setCategory(""); setAssets([]); setSearchQuery(""); setSearchResults([]); setSelectedAsset(null); }} className="text-emerald-400 mb-6">← Change category</button>
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 32 }}>
 
-            {loading ? (
-              <p>Loading {category} prices...</p>
-            ) : (
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
-                  <h2 className="font-semibold mb-4">New Simulation</h2>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm mb-2">Search any {category}</label>
-                      <div className="flex gap-2">
-                        <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSearch()} placeholder={`Search ${category}...`} className="flex-1 bg-slate-700 border border-slate-600 rounded-lg py-2 px-4" />
-                        <button onClick={handleSearch} disabled={searching} className="bg-emerald-500 hover:bg-emerald-600 px-4 rounded-lg">{searching ? "..." : "🔍"}</button>
-                      </div>
-                    </div>
+            {/* Sidebar */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <button onClick={() => { setSelected(null); setSearch(""); }} style={{
+                background: "var(--surface)", border: "1px solid var(--border)",
+                color: "var(--text2)", borderRadius: "var(--radius-sm)", padding: "10px 16px",
+                fontSize: 13, cursor: "pointer", textAlign: "left",
+              }}>← Back to asset types</button>
 
-                    {searchResults.length > 0 && (
-                      <div className="space-y-2">
-                        <label className="block text-sm text-slate-400">Search Results</label>
-                        {searchResults.map(a => (
-                          <button key={a.id} onClick={() => handleSelectAsset(a)} className="w-full bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg p-3 text-left flex justify-between items-center">
-                            <div>
-                              <div className="font-medium">{a.name}</div>
-                              <div className="text-sm text-slate-400">{a.symbol}</div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-emerald-400 font-semibold">${a.price.toLocaleString()}</div>
-                              <div className={`text-sm ${a.change >= 0 ? "text-emerald-400" : "text-red-400"}`}>{a.change >= 0 ? "+" : ""}{a.change.toFixed(2)}%</div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {searchResults.length === 0 && !selectedAsset && (
-                      <div className="space-y-2">
-                        <label className="block text-sm text-slate-400">Popular {category}</label>
-                        {assets.slice(0, 5).map(a => (
-                          <button key={a.id} onClick={() => handleSelectAsset(a)} className="w-full bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg p-3 text-left flex justify-between items-center">
-                            <div>
-                              <div className="font-medium">{a.name}</div>
-                              <div className="text-sm text-slate-400">{a.symbol}</div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-emerald-400 font-semibold">${a.price.toLocaleString()}</div>
-                              <div className={`text-sm ${a.change >= 0 ? "text-emerald-400" : "text-red-400"}`}>{a.change >= 0 ? "+" : ""}{a.change.toFixed(2)}%</div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {selectedAsset && (
-                      <div className="bg-emerald-500/10 border border-emerald-500 rounded-lg p-4">
-                        <div className="flex justify-between items-center mb-3">
-                          <div>
-                            <div className="font-semibold">{selectedAsset.name}</div>
-                            <div className="text-sm text-slate-400">{selectedAsset.symbol}</div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-emerald-400 font-bold text-xl">${selectedAsset.price.toLocaleString()}</div>
-                            <button onClick={() => setSelectedAsset(null)} className="text-sm text-slate-400 hover:text-white">Change</button>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-sm mb-2">Amount ($)</label>
-                          <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="500" className="w-full bg-slate-700 border border-slate-600 rounded-lg py-2 px-4" />
-                        </div>
-                        {amount && parseFloat(amount) > 0 && (
-                          <div className="mt-2 text-sm text-slate-400">
-                            You will get {(parseFloat(amount) / selectedAsset.price).toFixed(4)} shares
-                          </div>
-                        )}
-                        <button onClick={handleSimulate} className="w-full mt-4 bg-emerald-500 hover:bg-emerald-600 font-semibold py-2 rounded-lg">Invest ${amount || "0"}</button>
-                      </div>
-                    )}
+              <div className="card" style={{ padding: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                  <div style={{ fontSize: 28 }}>{cfg?.icon}</div>
+                  <div>
+                    <div style={{ fontWeight: 800, fontFamily: "Syne, sans-serif" }}>{cfg?.label}</div>
+                    <div style={{ fontSize: 12, color: "var(--text3)" }}>{cfg?.sub}</div>
                   </div>
                 </div>
-                <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
-                  <h2 className="font-semibold mb-4">Portfolio</h2>
-                  <div className="space-y-3">
-                    <div className="flex justify-between"><span className="text-slate-400">Invested</span><span>${totalInvested.toLocaleString()}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-400">Value</span><span>${totalValue.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-400">Gain/Loss</span><span className={totalGain >= 0 ? "text-emerald-400" : "text-red-400"}>{totalGain >= 0 ? "+" : ""}${totalGain.toFixed(2)}</span></div>
-                  </div>
-                </div>
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search symbol or name..."/>
               </div>
-            )}
 
-            {simulations.length > 0 && (
-              <div className="mt-8">
-                <h2 className="font-semibold mb-4">Your Simulations</h2>
-                <div className="space-y-3">
-                  {simulations.map(sim => (
-                    <div key={sim.id} className="bg-slate-800 border border-slate-700 rounded-lg p-4 flex justify-between items-center">
-                      <div>
-                        <div className="font-medium">{sim.asset}</div>
-                        <div className="text-sm text-slate-400">${sim.amount} at ${sim.startPrice.toLocaleString()}</div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-sm text-slate-400">{sim.symbol}</div>
-                        <button onClick={() => handleDelete(sim.id)} className="text-red-400 hover:text-red-300 text-sm">Delete</button>
-                      </div>
-                    </div>
+              <div className="card" style={{ padding: 20 }}>
+                <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 16, fontFamily: "DM Mono, monospace" }}>YOUR BALANCE</div>
+                <div style={{ fontSize: 32, fontWeight: 900, fontFamily: "Syne, sans-serif", color: "var(--purple)" }}>$10,000</div>
+                <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 4 }}>Simulated cash available</div>
+              </div>
+            </div>
+
+            {/* Main area */}
+            <div>
+              <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 20, fontFamily: "DM Mono, monospace" }}>
+                POPULAR {cfg?.label.toUpperCase()}
+              </div>
+
+              {filtered.length === 0 && selected !== "custom" ? (
+                <div style={{ color: "var(--text3)", fontSize: 14, padding: "40px 0" }}>No results for &quot;{search}&quot;</div>
+              ) : selected === "custom" ? (
+                <div className="card" style={{ textAlign: "center", padding: "60px 40px" }}>
+                  <div style={{ fontSize: 48, marginBottom: 20 }}>🔍</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "Syne, sans-serif", marginBottom: 12 }}>Search Any Asset</div>
+                  <div style={{ fontSize: 14, color: "var(--text2)", marginBottom: 28 }}>Stocks, ETFs, crypto, indices — if it has a ticker, we can find it</div>
+                  <input placeholder="Enter symbol (e.g. AAPL, BTC, SPY)" style={{ maxWidth: 360, margin: "0 auto" }}/>
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
+                  {filtered.map(p => (
+                    <button key={p.symbol} style={{
+                      background: "var(--surface)", border: "1px solid var(--border)",
+                      borderRadius: "var(--radius-sm)", padding: "20px 16px",
+                      cursor: "pointer", textAlign: "left", transition: "all 0.2s",
+                    }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = cfg?.accent || "var(--purple)";
+                      (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)";
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)";
+                      (e.currentTarget as HTMLButtonElement).style.transform = "none";
+                    }}>
+                      <div style={{
+                        width: 36, height: 36, borderRadius: 10,
+                        background: `${cfg?.accent}18`, border: `1px solid ${cfg?.accent}30`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontWeight: 900, fontSize: 12, color: cfg?.accent,
+                        fontFamily: "DM Mono, monospace", marginBottom: 12,
+                      }}>{p.symbol.slice(0, 3)}</div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)", marginBottom: 4 }}>{p.symbol}</div>
+                      <div style={{ fontSize: 12, color: "var(--text3)" }}>{p.name}</div>
+                    </button>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
+
+        <div style={{ marginTop: 56 }}>
+          <Link href="/my-portfolio" className="btn-ghost">View My Portfolio →</Link>
+        </div>
       </div>
     </div>
   );
