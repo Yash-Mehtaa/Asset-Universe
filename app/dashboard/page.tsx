@@ -1,173 +1,177 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-
-type Transaction = { id: number; desc: string; amount: number; category: string; type: "income" | "expense" };
+import { Footer } from "../components/Footer";
 
 const CATEGORIES = ["Housing", "Food", "Transport", "Entertainment", "Healthcare", "Other"];
-const CAT_COLORS: Record<string, string> = {
-  Housing: "#a78bfa", Food: "#38bdf8", Transport: "#34d399",
-  Entertainment: "#fbbf24", Healthcare: "#f87171", Other: "#94a3b8",
+const COLORS: Record<string, string> = {
+  Housing: "#c9a875", Food: "#7fa886", Transport: "#88a2c4",
+  Entertainment: "#c98570", Healthcare: "#a89070", Other: "#7a7468",
 };
+
+type Tx = { id: number; desc: string; amount: number; category: string; type: "income" | "expense" };
 
 export default function DashboardPage() {
   const [income, setIncome] = useState(0);
   const [expenses, setExpenses] = useState(0);
   const [emergency, setEmergency] = useState(0);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [newDesc, setNewDesc] = useState("");
-  const [newAmount, setNewAmount] = useState("");
-  const [newCat, setNewCat] = useState("Other");
-  const [newType, setNewType] = useState<"income" | "expense">("expense");
+  const [transactions, setTransactions] = useState<Tx[]>([]);
+  const [d, setD] = useState(""); const [a, setA] = useState("");
+  const [c, setC] = useState("Other"); const [t, setT] = useState<"income" | "expense">("expense");
 
   const investable = Math.max(0, income - expenses - emergency);
   const investPct = income > 0 ? (investable / income) * 100 : 0;
 
-  const addTransaction = () => {
-    if (!newDesc || !newAmount) return;
-    const amt = parseFloat(newAmount);
-    if (isNaN(amt)) return;
-    setTransactions(t => [...t, { id: Date.now(), desc: newDesc, amount: amt, category: newCat, type: newType }]);
-    if (newType === "income") setIncome(i => i + amt);
-    else setExpenses(e => e + amt);
-    setNewDesc(""); setNewAmount("");
+  const add = () => {
+    if (!d || !a) return;
+    const amt = parseFloat(a); if (isNaN(amt)) return;
+    setTransactions(arr => [...arr, { id: Date.now(), desc: d, amount: amt, category: c, type: t }]);
+    if (t === "income") setIncome(i => i + amt); else setExpenses(e => e + amt);
+    setD(""); setA("");
   };
 
-  const byCategory = CATEGORIES.map(c => ({
-    cat: c,
-    total: transactions.filter(t => t.category === c && t.type === "expense").reduce((s, t) => s + t.amount, 0),
+  const byCat = CATEGORIES.map(cat => ({
+    cat,
+    total: transactions.filter(tx => tx.category === cat && tx.type === "expense").reduce((s, tx) => s + tx.amount, 0),
   })).filter(c => c.total > 0);
-
-  const maxCat = Math.max(...byCategory.map(c => c.total), 1);
+  const maxCat = Math.max(...byCat.map(c => c.total), 1);
 
   return (
-    <div style={{ position: "relative", zIndex: 1 }}>
-      <div className="section animate-fadeup">
-
-        {/* Header */}
-        <div style={{ marginBottom: 8 }}>
-          <span className="badge tag-neutral">STEP 1 OF 4</span>
+    <>
+      <section style={{ padding: "60px 40px 40px" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div className="fadeup" style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 24 }}>
+            <span className="mono" style={{ fontSize: 12, color: "var(--text-3)", letterSpacing: "0.1em" }}>02 / 06</span>
+            <div style={{ width: 40, height: 1, background: "var(--border)" }} />
+            <span className="eyebrow">Step 02 — Plan</span>
+          </div>
+          <h1 className="fadeup-delay-1" style={{ fontSize: "clamp(40px, 6vw, 72px)", marginBottom: 20, maxWidth: 900 }}>
+            How much can you <em style={{ color: "var(--accent)", fontStyle: "italic", fontWeight: 400 }}>safely</em> invest?
+          </h1>
+          <p className="fadeup-delay-2" style={{ fontSize: 18, maxWidth: 580, marginBottom: 0 }}>
+            Enter your income and expenses below. We'll calculate exactly what's left over for investing each month — after the things that matter.
+          </p>
         </div>
-        <h1 style={{ fontSize: "clamp(28px, 4vw, 48px)", marginBottom: 12 }}>
-          <span className="gradient-text">Budget Calculator</span>
-        </h1>
-        <p style={{ color: "var(--text2)", marginBottom: 48, maxWidth: 480 }}>
-          Figure out how much you can safely invest each month. Optional — skip if you already know your budget.
-        </p>
+      </section>
 
+      <section className="section">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
 
-          {/* Left: inputs */}
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-
-            {/* Quick setup */}
             <div className="card">
-              <h2 style={{ fontSize: 16, marginBottom: 20, fontFamily: "Syne, sans-serif" }}>⚡ Quick Setup</h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 14, marginBottom: 24 }}>
+                <span className="mono" style={{ fontSize: 12, color: "var(--accent)" }}>I.</span>
+                <h3 style={{ fontSize: 22 }}>Quick setup</h3>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
                 {[
-                  { label: "Monthly Income (after tax)", val: income, set: setIncome },
-                  { label: "Monthly Expenses", val: expenses, set: setExpenses },
-                  { label: "Emergency Fund (optional)", val: emergency, set: setEmergency },
+                  { label: "Monthly income (after tax)", val: income, set: setIncome },
+                  { label: "Monthly expenses", val: expenses, set: setExpenses },
+                  { label: "Emergency fund (optional)", val: emergency, set: setEmergency },
                 ].map(f => (
                   <div key={f.label}>
-                    <label style={{ fontSize: 12, color: "var(--text3)", display: "block", marginBottom: 6, fontFamily: "DM Mono, monospace" }}>
-                      {f.label}
-                    </label>
+                    <label style={{ display: "block", fontSize: 13, color: "var(--text-2)", marginBottom: 8 }}>{f.label}</label>
                     <div style={{ position: "relative" }}>
-                      <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text3)", fontSize: 14 }}>$</span>
-                      <input
-                        type="number" min="0"
-                        value={f.val || ""}
-                        onChange={e => f.set(parseFloat(e.target.value) || 0)}
-                        style={{ paddingLeft: 28 }}
-                        placeholder="0"
-                      />
+                      <span style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: "var(--text-3)", fontFamily: "var(--mono)", fontSize: 14 }}>$</span>
+                      <input type="number" min="0" value={f.val || ""} onChange={e => f.set(parseFloat(e.target.value) || 0)} style={{ paddingLeft: 32 }} placeholder="0" />
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Add transaction */}
             <div className="card">
-              <h2 style={{ fontSize: 16, marginBottom: 20, fontFamily: "Syne, sans-serif" }}>+ Add Transaction</h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Description"/>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 14, marginBottom: 24 }}>
+                <span className="mono" style={{ fontSize: 12, color: "var(--accent)" }}>II.</span>
+                <h3 style={{ fontSize: 22 }}>Add transaction</h3>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <input value={d} onChange={e => setD(e.target.value)} placeholder="Description (e.g. Rent, Groceries)" />
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   <div style={{ position: "relative" }}>
-                    <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text3)" }}>$</span>
-                    <input type="number" min="0" value={newAmount} onChange={e => setNewAmount(e.target.value)} style={{ paddingLeft: 28 }} placeholder="0"/>
+                    <span style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: "var(--text-3)" }}>$</span>
+                    <input type="number" min="0" value={a} onChange={e => setA(e.target.value)} placeholder="0" style={{ paddingLeft: 28 }} />
                   </div>
-                  <select value={newCat} onChange={e => setNewCat(e.target.value)}>
-                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                  <select value={c} onChange={e => setC(e.target.value)}>
+                    {CATEGORIES.map(cat => <option key={cat}>{cat}</option>)}
                   </select>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  {(["income", "expense"] as const).map(t => (
-                    <button key={t} onClick={() => setNewType(t)} style={{
-                      flex: 1, padding: "8px 0", borderRadius: 8, fontSize: 13, fontWeight: 700,
-                      background: newType === t ? (t === "income" ? "var(--green-dim)" : "var(--red-dim)") : "var(--surface)",
-                      border: `1px solid ${newType === t ? (t === "income" ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)") : "var(--border)"}`,
-                      color: newType === t ? (t === "income" ? "var(--green)" : "var(--red)") : "var(--text2)",
+                  {(["income", "expense"] as const).map(typ => (
+                    <button key={typ} onClick={() => setT(typ)} style={{
+                      flex: 1, padding: "10px 0",
+                      borderRadius: "var(--radius)",
+                      fontSize: 13, fontWeight: 500,
+                      background: t === typ ? (typ === "income" ? "var(--green-soft)" : "var(--red-soft)") : "var(--surface-2)",
+                      border: `1px solid ${t === typ ? (typ === "income" ? "var(--green)" : "var(--red)") : "var(--border)"}`,
+                      color: t === typ ? (typ === "income" ? "var(--green)" : "var(--red)") : "var(--text-2)",
                       textTransform: "capitalize", transition: "all 0.2s",
-                    }}>{t}</button>
+                    }}>{typ}</button>
                   ))}
                 </div>
-                <button className="btn-primary" onClick={addTransaction} style={{ justifyContent: "center" }}>Add</button>
+                <button className="btn btn-primary" onClick={add} style={{ justifyContent: "center" }}>Add transaction</button>
               </div>
             </div>
           </div>
 
-          {/* Right: results */}
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
-            {/* Summary cards */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {[
-                { label: "Total Income", value: income, icon: "💰", color: "var(--green)" },
-                { label: "Total Expenses", value: expenses, icon: "💸", color: "var(--red)" },
-                { label: "Emergency Fund", value: emergency, icon: "🛡️", color: "var(--blue)" },
-                { label: "Can Invest", value: investable, icon: "📈", color: "var(--purple)" },
+                { label: "Income", value: income, color: "var(--green)" },
+                { label: "Expenses", value: expenses, color: "var(--red)" },
+                { label: "Emergency", value: emergency, color: "var(--blue)" },
+                { label: "Investable", value: investable, color: "var(--accent)" },
               ].map(s => (
-                <div key={s.label} className="stat-card">
-                  <div className="label">{s.icon} {s.label}</div>
-                  <div className="value" style={{ color: s.color, fontSize: 18 }}>
+                <div key={s.label} style={{
+                  background: "var(--surface)", border: "1px solid var(--border)",
+                  borderRadius: "var(--radius)", padding: "20px 22px",
+                }}>
+                  <div className="eyebrow" style={{ fontSize: 10, marginBottom: 8 }}>{s.label}</div>
+                  <div style={{ fontFamily: "var(--serif)", fontSize: 26, fontWeight: 500, color: s.color }}>
                     ${s.value.toLocaleString()}
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Investable highlight */}
-            <div className="card" style={{ borderColor: investable > 0 ? "var(--purple-border)" : "var(--border)", background: investable > 0 ? "var(--purple-dim)" : "var(--surface)", textAlign: "center" }}>
-              <div style={{ fontSize: 13, color: "var(--text3)", marginBottom: 8, fontFamily: "DM Mono, monospace" }}>MONTHLY INVESTABLE AMOUNT</div>
-              <div style={{ fontSize: 48, fontWeight: 900, fontFamily: "Syne, sans-serif", color: investable > 0 ? "var(--purple)" : "var(--text3)", letterSpacing: "-2px" }}>
+            <div className="card" style={{
+              background: investable > 0 ? "var(--accent-soft)" : "var(--surface)",
+              borderColor: investable > 0 ? "var(--accent-strong)" : "var(--border)",
+              textAlign: "center", padding: "44px 32px",
+            }}>
+              <div className="eyebrow" style={{ marginBottom: 14 }}>Monthly investable amount</div>
+              <div style={{
+                fontFamily: "var(--serif)",
+                fontSize: "clamp(48px, 7vw, 80px)",
+                fontWeight: 500,
+                color: investable > 0 ? "var(--accent)" : "var(--text-3)",
+                lineHeight: 1,
+                letterSpacing: "-0.03em",
+              }}>
                 ${investable.toLocaleString()}
               </div>
               {income > 0 && (
-                <div style={{ fontSize: 13, color: "var(--text2)", marginTop: 8 }}>
-                  {investPct.toFixed(1)}% of income
+                <div style={{ marginTop: 16, fontSize: 14, color: "var(--text-2)" }}>
+                  <em style={{ fontStyle: "italic", color: "var(--accent)" }}>{investPct.toFixed(1)}%</em> of your income
                 </div>
               )}
-              {/* Bar */}
-              <div style={{ marginTop: 16, height: 6, borderRadius: 3, background: "var(--surface2)", overflow: "hidden" }}>
-                <div style={{ height: "100%", borderRadius: 3, background: "linear-gradient(90deg, var(--purple), var(--blue))", width: `${Math.min(investPct, 100)}%`, transition: "width 0.5s ease" }}/>
+              <div style={{ marginTop: 24, height: 4, borderRadius: 2, background: "var(--surface-2)", overflow: "hidden" }}>
+                <div style={{ height: "100%", background: "var(--accent)", width: `${Math.min(investPct, 100)}%`, transition: "width 0.6s ease" }} />
               </div>
             </div>
 
-            {/* Category breakdown */}
-            {byCategory.length > 0 && (
+            {byCat.length > 0 && (
               <div className="card">
-                <h3 style={{ fontSize: 14, marginBottom: 16, fontFamily: "Syne, sans-serif" }}>📊 Spending by Category</h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {byCategory.map(c => (
+                <div className="eyebrow" style={{ marginBottom: 18 }}>Spending by category</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {byCat.map(c => (
                     <div key={c.cat}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                        <span style={{ fontSize: 12, color: "var(--text2)" }}>{c.cat}</span>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: CAT_COLORS[c.cat] }}>${c.total.toLocaleString()}</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <span style={{ fontSize: 14 }}>{c.cat}</span>
+                        <span style={{ fontFamily: "var(--mono)", fontSize: 13, color: COLORS[c.cat] }}>${c.total.toLocaleString()}</span>
                       </div>
-                      <div style={{ height: 4, borderRadius: 2, background: "var(--surface2)", overflow: "hidden" }}>
-                        <div style={{ height: "100%", borderRadius: 2, background: CAT_COLORS[c.cat], width: `${(c.total / maxCat) * 100}%`, transition: "width 0.4s ease" }}/>
+                      <div style={{ height: 4, background: "var(--surface-2)", borderRadius: 2, overflow: "hidden" }}>
+                        <div style={{ height: "100%", background: COLORS[c.cat], width: `${(c.total / maxCat) * 100}%`, transition: "width 0.4s" }} />
                       </div>
                     </div>
                   ))}
@@ -175,20 +179,24 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Transactions */}
             {transactions.length > 0 && (
               <div className="card">
-                <h3 style={{ fontSize: 14, marginBottom: 16, fontFamily: "Syne, sans-serif" }}>📝 Transactions</h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 200, overflowY: "auto" }}>
-                  {transactions.map(t => (
-                    <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "var(--surface)", borderRadius: 8, border: "1px solid var(--border)" }}>
+                <div className="eyebrow" style={{ marginBottom: 18 }}>Transactions ({transactions.length})</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 220, overflowY: "auto" }}>
+                  {transactions.slice().reverse().map(tx => (
+                    <div key={tx.id} style={{
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                      padding: "10px 14px",
+                      background: "var(--surface-2)",
+                      borderRadius: "var(--radius)",
+                    }}>
                       <div>
-                        <span style={{ fontSize: 13, color: "var(--text)" }}>{t.desc}</span>
-                        <span style={{ fontSize: 11, color: "var(--text3)", marginLeft: 8 }}>{t.category}</span>
+                        <div style={{ fontSize: 14 }}>{tx.desc}</div>
+                        <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--text-3)", marginTop: 2 }}>{tx.category}</div>
                       </div>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: t.type === "income" ? "var(--green)" : "var(--red)" }}>
-                        {t.type === "income" ? "+" : "-"}${t.amount.toLocaleString()}
-                      </span>
+                      <div style={{ fontFamily: "var(--mono)", fontSize: 14, color: tx.type === "income" ? "var(--green)" : "var(--red)" }}>
+                        {tx.type === "income" ? "+" : "−"}${tx.amount.toLocaleString()}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -197,12 +205,13 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* CTAs */}
-        <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
-          <Link href="/learn" className="btn-primary">Learn About Assets →</Link>
-          <Link href="/simulate" className="btn-ghost">Skip to Simulator</Link>
+        <div style={{ display: "flex", gap: 12, marginTop: 60 }}>
+          <Link href="/learn" className="btn btn-primary">Continue to Learn →</Link>
+          <Link href="/simulate" className="btn btn-ghost">Skip to simulator</Link>
         </div>
-      </div>
-    </div>
+      </section>
+
+      <Footer />
+    </>
   );
 }

@@ -1,73 +1,25 @@
 import Link from "next/link";
+import { Footer } from "../components/Footer";
 
 const ASSETS = [
-  {
-    icon: "📈", name: "Stocks", tagline: "Own a piece of a company",
-    risk: 4, riskLabel: "High",
-    returns: "8–12% avg/year",
-    goodFor: "Long-term growth",
-    watchOut: "Can drop 30%+ in crashes",
-    accent: "#a78bfa",
-    desc: "When you buy a stock, you become a part-owner of a company. Your investment grows as the company grows, and shrinks when it struggles.",
-  },
-  {
-    icon: "📊", name: "ETFs", tagline: "A basket of stocks in one purchase",
-    risk: 2, riskLabel: "Medium",
-    returns: "6–10% avg/year",
-    goodFor: "Instant diversification",
-    watchOut: "Less upside than stock-picking",
-    accent: "#38bdf8",
-    desc: "ETFs hold dozens or hundreds of stocks at once. Great risk management — if one company tanks, the others hold you up.",
-  },
-  {
-    icon: "🏛️", name: "Govt Bonds", tagline: "Loan money to the government",
-    risk: 1, riskLabel: "Low",
-    returns: "3–5% avg/year",
-    goodFor: "Safe, predictable income",
-    watchOut: "Low returns, loses to inflation",
-    accent: "#34d399",
-    desc: "Government bonds are IOUs from the government. Extremely safe but the returns barely keep up with inflation long-term.",
-  },
-  {
-    icon: "🏢", name: "Corporate Bonds", tagline: "Loan money to companies",
-    risk: 2, riskLabel: "Medium",
-    returns: "4–7% avg/year",
-    goodFor: "Higher yield than govt bonds",
-    watchOut: "Company could default",
-    accent: "#34d399",
-    desc: "Similar to government bonds but issued by companies. Higher returns reflect higher risk — companies can go bankrupt.",
-  },
-  {
-    icon: "₿", name: "Crypto", tagline: "Digital currencies like Bitcoin",
-    risk: 5, riskLabel: "Very High",
-    returns: "Highly variable",
-    goodFor: "Massive upside potential",
-    watchOut: "Can lose 80%+ in downturns",
-    accent: "#fbbf24",
-    desc: "Highly speculative. Some people made fortunes, many lost everything. Only invest what you'd be comfortable losing entirely.",
-  },
-  {
-    icon: "🏦", name: "High-Yield Savings", tagline: "Savings account with better rates",
-    risk: 0, riskLabel: "None",
-    returns: "4–5% currently",
-    goodFor: "Zero risk, instant access",
-    watchOut: "Barely beats inflation",
-    accent: "#94a3b8",
-    desc: "The safest option. Your money is FDIC-insured and accessible any time. Best for your emergency fund or short-term savings.",
-  },
+  { num: "01", icon: "📈", name: "Stocks", tagline: "Own a piece of a company", risk: 4, riskLabel: "High", returns: "8–12% avg/year", goodFor: "Long-term growth", watchOut: "Can drop 30%+ in crashes", desc: "When you buy a stock, you become a part-owner of a company. Your investment grows as the company grows — and shrinks when it struggles." },
+  { num: "02", icon: "📊", name: "ETFs", tagline: "A basket of assets in one purchase", risk: 2, riskLabel: "Medium", returns: "6–10% avg/year", goodFor: "Instant diversification", watchOut: "Less upside than stock-picking", desc: "ETFs hold dozens or hundreds of stocks at once. Great risk management — if one company tanks, the others hold you up." },
+  { num: "03", icon: "🏛️", name: "Government Bonds", tagline: "Loan money to the government", risk: 1, riskLabel: "Low", returns: "3–5% avg/year", goodFor: "Safe, predictable income", watchOut: "Low returns, loses to inflation", desc: "Government bonds are essentially IOUs from the government. Extremely safe but the returns barely keep up with inflation." },
+  { num: "04", icon: "🏢", name: "Corporate Bonds", tagline: "Loan money to companies", risk: 2, riskLabel: "Medium", returns: "4–7% avg/year", goodFor: "Higher yield than govt bonds", watchOut: "Company could default", desc: "Similar to government bonds but issued by companies. Higher returns reflect higher risk — companies can go bankrupt." },
+  { num: "05", icon: "₿", name: "Crypto", tagline: "Digital currencies like Bitcoin", risk: 5, riskLabel: "Very High", returns: "Highly variable", goodFor: "Massive upside potential", watchOut: "Can lose 80%+ in downturns", desc: "Highly speculative. Some people made fortunes, many lost everything. Only invest what you'd be comfortable losing entirely." },
+  { num: "06", icon: "🏦", name: "High-Yield Savings", tagline: "Savings account with better rates", risk: 0, riskLabel: "None", returns: "4–5% currently", goodFor: "Zero risk, instant access", watchOut: "Barely beats inflation", desc: "The safest option. Your money is FDIC-insured and accessible any time. Best for your emergency fund or short-term savings." },
 ];
 
 function RiskBar({ level }: { level: number }) {
   return (
-    <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+    <div style={{ display: "flex", gap: 4 }}>
       {[0, 1, 2, 3, 4].map(i => (
         <div key={i} style={{
-          width: 20, height: 6, borderRadius: 3,
+          width: 24, height: 4, borderRadius: 2,
           background: i <= level
-            ? (level <= 1 ? "var(--green)" : level <= 2 ? "var(--blue)" : level <= 3 ? "var(--amber)" : "var(--red)")
-            : "var(--surface2)",
-          transition: "background 0.2s",
-        }}/>
+            ? (level <= 1 ? "var(--green)" : level <= 2 ? "var(--blue)" : level <= 3 ? "var(--accent)" : "var(--red)")
+            : "var(--surface-2)",
+        }} />
       ))}
     </div>
   );
@@ -75,76 +27,70 @@ function RiskBar({ level }: { level: number }) {
 
 export default function LearnPage() {
   return (
-    <div style={{ position: "relative", zIndex: 1 }}>
-      <div className="section animate-fadeup">
-
-        <div style={{ marginBottom: 8 }}>
-          <span className="badge tag-neutral">STEP 2 OF 4</span>
+    <>
+      <section style={{ padding: "60px 40px 40px" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div className="fadeup" style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 24 }}>
+            <span className="mono" style={{ fontSize: 12, color: "var(--text-3)" }}>03 / 06</span>
+            <div style={{ width: 40, height: 1, background: "var(--border)" }} />
+            <span className="eyebrow">Step 03 — Learn</span>
+          </div>
+          <h1 className="fadeup-delay-1" style={{ fontSize: "clamp(40px, 6vw, 72px)", marginBottom: 20, maxWidth: 900 }}>
+            Every asset class, <em style={{ color: "var(--accent)", fontStyle: "italic", fontWeight: 400 }}>honestly</em> explained.
+          </h1>
+          <p className="fadeup-delay-2" style={{ fontSize: 18, maxWidth: 580 }}>
+            Six asset classes. Six honest summaries. Real numbers, real risk, real context — no hype, no gatekeeping.
+          </p>
         </div>
-        <h1 style={{ fontSize: "clamp(28px, 4vw, 48px)", marginBottom: 12 }}>
-          <span className="gradient-text">Learn About Assets</span>
-        </h1>
-        <p style={{ color: "var(--text2)", maxWidth: 500, marginBottom: 56 }}>
-          Understand your options before investing. No jargon, just clarity.
-        </p>
+      </section>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20 }}>
+      <section className="section">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 20 }}>
           {ASSETS.map(a => (
-            <div key={a.name} className="card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-              {/* Header */}
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 12,
-                    background: `${a.accent}18`,
-                    border: `1px solid ${a.accent}40`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 22, flexShrink: 0,
-                  }}>{a.icon}</div>
-                  <div>
-                    <div style={{ fontWeight: 800, fontFamily: "Syne, sans-serif", fontSize: 16 }}>{a.name}</div>
-                    <div style={{ fontSize: 12, color: "var(--text3)" }}>{a.tagline}</div>
+            <article key={a.name} className="card" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+                <div>
+                  <span className="mono" style={{ fontSize: 11, color: "var(--text-3)", letterSpacing: "0.1em" }}>{a.num}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
+                    <span style={{ fontSize: 28 }}>{a.icon}</span>
+                    <div>
+                      <h3 style={{ fontSize: 22 }}>{a.name}</h3>
+                      <p style={{ fontSize: 13, color: "var(--text-3)", marginTop: 2 }}>{a.tagline}</p>
+                    </div>
                   </div>
                 </div>
-                <span className="badge" style={{
-                  background: `${a.accent}18`, color: a.accent,
-                  border: `1px solid ${a.accent}40`, whiteSpace: "nowrap", flexShrink: 0,
-                }}>
-                  {a.returns}
-                </span>
+                <span className="tag tag-accent" style={{ whiteSpace: "nowrap" }}>{a.returns}</span>
               </div>
 
-              {/* Description */}
-              <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.6 }}>{a.desc}</p>
+              <p style={{ fontSize: 14, lineHeight: 1.65 }}>{a.desc}</p>
 
-              {/* Risk */}
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "DM Mono, monospace" }}>RISK</span>
-                <RiskBar level={a.risk}/>
-                <span style={{ fontSize: 12, fontWeight: 700, color: a.accent }}>{a.riskLabel}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <span className="eyebrow" style={{ fontSize: 10 }}>Risk</span>
+                <RiskBar level={a.risk} />
+                <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: a.risk <= 1 ? "var(--green)" : a.risk <= 2 ? "var(--blue)" : a.risk <= 3 ? "var(--accent)" : "var(--red)" }}>{a.riskLabel}</span>
               </div>
 
-              {/* Good for / Watch out */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <div style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)", borderRadius: 8, padding: "8px 10px" }}>
-                  <div style={{ fontSize: 10, color: "var(--green)", marginBottom: 4, fontFamily: "DM Mono, monospace", fontWeight: 700 }}>✓ GOOD FOR</div>
-                  <div style={{ fontSize: 12, color: "var(--text2)" }}>{a.goodFor}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: "auto" }}>
+                <div style={{ background: "var(--green-soft)", border: "1px solid rgba(127,168,134,0.2)", padding: "10px 12px", borderRadius: "var(--radius)" }}>
+                  <div className="mono" style={{ fontSize: 9, color: "var(--green)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>+ Good for</div>
+                  <div style={{ fontSize: 12, color: "var(--text)" }}>{a.goodFor}</div>
                 </div>
-                <div style={{ background: "rgba(248,113,113,0.06)", border: "1px solid rgba(248,113,113,0.15)", borderRadius: 8, padding: "8px 10px" }}>
-                  <div style={{ fontSize: 10, color: "var(--red)", marginBottom: 4, fontFamily: "DM Mono, monospace", fontWeight: 700 }}>⚠ WATCH OUT</div>
-                  <div style={{ fontSize: 12, color: "var(--text2)" }}>{a.watchOut}</div>
+                <div style={{ background: "var(--red-soft)", border: "1px solid rgba(201,133,112,0.2)", padding: "10px 12px", borderRadius: "var(--radius)" }}>
+                  <div className="mono" style={{ fontSize: 9, color: "var(--red)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>− Watch out</div>
+                  <div style={{ fontSize: 12, color: "var(--text)" }}>{a.watchOut}</div>
                 </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
 
-        <div style={{ display: "flex", gap: 12, marginTop: 56 }}>
-          <Link href="/simulate" className="btn-primary">Try the Simulator →</Link>
-          <Link href="/ai-investors" className="btn-ghost">Watch AI Investors</Link>
+        <div style={{ display: "flex", gap: 12, marginTop: 60 }}>
+          <Link href="/simulate" className="btn btn-primary">Try the simulator →</Link>
+          <Link href="/ai-investors" className="btn btn-ghost">Watch AI investors</Link>
         </div>
-      </div>
-    </div>
+      </section>
+
+      <Footer />
+    </>
   );
 }
