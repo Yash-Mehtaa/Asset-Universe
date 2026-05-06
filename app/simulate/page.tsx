@@ -35,6 +35,7 @@ type SearchResult = {
   price: number;
   change: number;
   type: string;
+  fetchedAt?: string;
 };
 
 const POPULAR: Record<string, { symbol: string; name: string }[]> = {
@@ -91,6 +92,13 @@ function fmt(n: number, d = 2) {
   return n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 }
 
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString("en-US", {
+    hour: "numeric", minute: "2-digit", second: "2-digit",
+    timeZoneName: "short",
+  });
+}
+
 export default function SimulatePage() {
   const [tab, setTab] = useState<"browse" | "trade">("browse");
   const [assetType, setAssetType] = useState<string | null>(null);
@@ -103,6 +111,7 @@ export default function SimulatePage() {
   const [portfolio, setPortfolio] = useState<Portfolio>({ holdings: [], trades: [] });
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [loadingPrice, setLoadingPrice] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   useEffect(() => { setPortfolio(getPortfolio()); }, []);
 
@@ -113,6 +122,7 @@ export default function SimulatePage() {
       const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
       const data = await res.json();
       setSearchResults(data.results || []);
+      if (data.fetchedAt) setLastUpdated(data.fetchedAt);
     } catch { setSearchResults([]); }
     finally { setSearching(false); }
   }, []);
@@ -129,6 +139,7 @@ export default function SimulatePage() {
       const res = await fetch(`/api/search?q=${encodeURIComponent(symbol)}`);
       const data = await res.json();
       const found = data.results?.find((r: SearchResult) => r.symbol === symbol) || data.results?.[0];
+      if (data.fetchedAt) setLastUpdated(data.fetchedAt);
       setSelected(found || { id: symbol.toLowerCase(), symbol, name, price: 0, change: 0, type });
     } catch {
       setSelected({ id: symbol.toLowerCase(), symbol, name, price: 0, change: 0, type });
@@ -149,7 +160,6 @@ export default function SimulatePage() {
     const p = getPortfolio();
 
     if (side === "buy") {
-      // No cash limit — unlimited simulated capital
       const existing = p.holdings.find(h => h.symbol === selected.symbol);
       if (existing) {
         existing.avgCost = (existing.avgCost * existing.shares + total) / (existing.shares + numShares);
@@ -203,9 +213,23 @@ export default function SimulatePage() {
           <h1 className="fadeup-delay-1" style={{ fontSize: "clamp(40px, 6vw, 72px)", marginBottom: 20 }}>
             Practice with <em style={{ color: "var(--accent)", fontStyle: "italic", fontWeight: 400 }}>real prices.</em>
           </h1>
-          <p className="fadeup-delay-2" style={{ fontSize: 18, maxWidth: 580 }}>
-            Unlimited simulated capital. Real-time market prices. Zero risk to your real money.
+          <p className="fadeup-delay-2" style={{ fontSize: 18, maxWidth: 580, marginBottom: 16 }}>
+            Unlimited simulated capital. Real-time or near real-time prices for US markets. Zero risk to your real money.
           </p>
+          {/* Data disclaimer */}
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            padding: "6px 14px",
+            background: "var(--surface)", border: "1px solid var(--border)",
+            borderRadius: 100, fontSize: 12, color: "var(--text-3)",
+            fontFamily: "var(--mono)",
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)", display: "inline-block", animation: "pulse 2s infinite" }} />
+            {lastUpdated
+              ? `Last updated ${formatTime(lastUpdated)} · US markets real-time · International may be delayed`
+              : "Prices real-time or near real-time for US markets · International may be delayed"
+            }
+          </div>
         </div>
       </section>
 
@@ -219,9 +243,7 @@ export default function SimulatePage() {
               <div style={{ fontFamily: "var(--serif)", fontSize: 32, fontWeight: 500, color: "var(--accent)" }}>
                 Unlimited
               </div>
-              <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 6 }}>
-                Practice without limits
-              </div>
+              <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 6 }}>Practice without limits</div>
             </div>
 
             {portfolio.holdings.length > 0 && (
@@ -293,7 +315,7 @@ export default function SimulatePage() {
                           border: "1px solid var(--border)", borderRadius: "var(--radius)",
                           cursor: "pointer", transition: "border-color 0.2s",
                         }}
-                        onClick={() => { setSelected(r); setTab("trade"); setSide("buy"); setSearchQ(""); setSearchResults([]); }}
+                        onClick={() => { setSelected(r); setTab("trade"); setSide("buy"); setSearchQ(""); setSearchResults([]); if (r.fetchedAt) setLastUpdated(r.fetchedAt); }}
                         onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.borderColor = "var(--accent)"}
                         onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)"}>
                           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -388,6 +410,11 @@ export default function SimulatePage() {
                             <div className="mono" style={{ fontSize: 12, color: selected.change >= 0 ? "var(--green)" : "var(--red)", marginTop: 4 }}>
                               {selected.change >= 0 ? "▲" : "▼"} {Math.abs(selected.change).toFixed(2)}% today
                             </div>
+                            {lastUpdated && (
+                              <div className="mono" style={{ fontSize: 10, color: "var(--text-3)", marginTop: 4 }}>
+                                Updated {formatTime(lastUpdated)}
+                              </div>
+                            )}
                           </>
                         )}
                       </div>

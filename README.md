@@ -1,236 +1,120 @@
-# 🌌 Asset Universe  
-**Smart Budgeting Meets Investment Education**
+# Asset Universe
 
-**Live Website:** https://asset-universe.vercel.app
+An educational investment simulator that lets you learn investing without risking real money. Practice with near real-time market data, understand every asset class, and watch autonomous AI investors operate transparently.
 
----
-
-## 📖 The Story
-
-Most investment apps assume you already know two critical things:
-
-• How much you can afford to invest  
-• How to invest it safely  
-
-But what if you're just starting out?  
-What if you're a student managing monthly expenses, unsure whether you have $50 or $500 left after rent, groceries, and that weekend trip?
-
-**Asset Universe** solves this by creating a complete financial journey in one platform:
-
-**First**, figure out your financial reality.  
-**Then**, learn how to invest what you have confidently and safely.
-
-Built by **Yash Kunal Mehta**, a Computer Science & Finance student at Rutgers University, this app bridges the gap between budgeting and investing, turning financial confusion into financial clarity.
+**Live:** [asset-universe.vercel.app](https://asset-universe.vercel.app)
 
 ---
 
-## 🚀 What Makes Asset Universe Different?
+## What it does
 
-### 🎯 Budget First Philosophy
-
-Unlike traditional investment platforms that jump straight to portfolios, Asset Universe starts with a simple question:
-
-> *"How much money do I actually have left this month?"*
-
-The integrated budget calculator tracks your income, expenses, and recurring transactions to show you in real time how much you can safely allocate to investments.
+- **Budget calculator** — figure out how much you can safely invest each month
+- **Asset library** — every major asset class explained honestly (stocks, ETFs, bonds, crypto, commodities)
+- **Investment simulator** — buy and sell with unlimited simulated capital and real market prices
+- **Portfolio tracker** — track your simulated performance over time
+- **AI investors** — three autonomous agents trading on real quant strategies, reviewing their own performance, and adapting over time
 
 ---
 
-### 📚 Learn Before You Leap
-
-Six comprehensive asset education modules teach you the fundamentals:
-
-• 📈 **Stocks** — Equity ownership, growth potential, volatility  
-• 🏛️ **Bonds** — Fixed income, stability, interest rates  
-• 📊 **ETFs** — Diversification, low fees, passive investing  
-• 💎 **Cryptocurrency** — Digital assets, blockchain, high risk reward  
-• 🛢️ **Commodities** — Gold, oil, inflation hedging  
-• 🏠 **Real Estate** — Property investment, REITs, tangible assets  
-
-Each module breaks down risk, return expectations, liquidity, and real world use cases.
-
----
-
-### 🎮 Real Market Simulation (No Shortcuts)
-
-The simulator uses nearly real time market data from **Finnhub**, **CoinGecko**, and **Alpha Vantage** APIs.
-
-But here's the twist:
-
-There is **no fast forward button**.
-
-You cannot skip ahead to see if your portfolio grew. You have to wait, just like real investing. This forces users to experience actual market volatility, emotional discipline, and long term thinking.
-
----
-
-### 🔍 Universal Asset Search
-
-Search for assets worldwide:
-
-• Stocks (AAPL, TSLA, NVDA)  
-• Cryptocurrencies (BTC, ETH, SOL)  
-• ETFs (SPY, QQQ, VOO)  
-• Commodities (Gold, Oil, Silver)  
-• Real Estate (REITs)  
-
-All with live pricing and historical data.
-
----
-
-## ✨ Key Features
-
-| Feature | Description |
-|------|------------|
-| 💰 Budget Calculator | Track income, expenses, and recurring transactions to know exactly how much you can invest |
-| 📚 Asset Education | Learn 6 asset classes with real world examples, risk profiles, and historical context |
-| 📈 Live Simulator | Practice investing with real market prices, no fake money psychology |
-| 🎯 My Portfolio | Track simulated investments, performance metrics, and risk exposure |
-| 🧩 Risk Profile Quiz | Discover your risk tolerance and receive personalised suggestions |
-| 🔍 Universal Search | Find stocks, crypto, ETFs, commodities, and REITs instantly |
-| 💾 Local Persistence | Your data saves automatically in your browser, no sign up required |
-| 📱 Responsive Design | Works seamlessly on desktop, tablet, and mobile |
-
----
-
-## 🛠️ Tech Stack
-
-Asset Universe is built using modern production grade technologies:
-
-**Frontend**  
-• Next.js 15 (App Router)  
-• React 19  
-
-**Language**  
-• TypeScript (98.9 percent type safe)
-
-**Styling**  
-• Tailwind CSS
-
-**State Management**  
-• React Hooks  
-• LocalStorage  
-
-**APIs**  
-• Finnhub — Stock prices and company data  
-• CoinGecko — Cryptocurrency prices  
-• Alpha Vantage — Commodities, ETFs, historical data  
-
-**Deployment**  
-• Vercel (Edge Network with auto deploy from Git)
-
-**Version Control**  
-• Git and GitHub
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-• Node.js 18+  
-• npm, yarn, or pnpm  
-
-**API Keys (Free Tier Available)**  
-• Finnhub API Key  
-• CoinGecko API Key (optional but recommended)  
-• Alpha Vantage API Key  
-
----  
-## Project Structure
-
-
-```bash
-asset-universe/
-├── app/
-│   ├── layout.tsx
-│   ├── page.tsx
-│   ├── budget/
-│   ├── learn/
-│   ├── simulator/
-│   ├── portfolio/
-│   └── profile/
-├── components/
-├── public/
-├── styles/
-├── utils/
-├── types/
-└── README.md
+## System architecture
 
 ```
-## 🎓 Educational Philosophy
+User Browser (Next.js frontend)
+        │
+        ▼
+Next.js API Routes  (/api/search, /api/prices)
+  ├── In-memory cache (45-second TTL)
+  └── Rate limiting protection
+        │
+        ▼
+External Market Data APIs
+  ├── Finnhub        → US stocks, ETFs, forex (real-time)
+  ├── CoinGecko      → Crypto prices (real-time)
+  └── CoinPaprika    → Crypto backup (real-time)
 
-### Reality First  
-No unrealistic returns. Just honest education using real market data.
+AI Backend (Python FastAPI on Railway)
+  ├── APScheduler    → Scheduled trade + review cycles
+  ├── SQLite         → Agent portfolios, trades, decisions
+  ├── Anthropic Claude API → Strategy self-review
+  └── Public REST API → /api/agents, /api/agents/{id}/trades, etc.
+```
 
-### Time as a Teacher  
-No fast forwarding because patience is part of investing.
-
-### Risk Awareness  
-Every decision is framed through risk understanding.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome.
-
-### Ideas for Contributions
-- More asset types  
-- News sentiment analysis  
-- Mobile app  
-- Social features  
-- Expanded educational content  
-- User authentication and cloud sync  
+API keys are never exposed to the browser. All external calls go through Next.js API routes on the server side.
 
 ---
 
-## ⚠️ Disclaimer
+## Market data
 
-Asset Universe is an educational platform only.  
-It is not a registered investment advisor.
+- **US stocks and ETFs:** Real-time or near real-time quotes via Finnhub (free tier, 60 calls/minute)
+- **Crypto:** Real-time prices via CoinGecko and CoinPaprika
+- **International markets:** May be delayed up to 15 minutes
+- **Caching:** API responses cached in-memory for 45 seconds to prevent rate limit abuse
 
-Market data may be delayed or inaccurate.  
-Simulated portfolios do not reflect real performance.  
-Past performance does not guarantee future results.  
-Consult a licensed financial advisor before investing.
-
----
-
-## 🙏 Acknowledgments
-
-### Market Data Providers
-- Finnhub.io  
-- CoinGecko  
-- Alpha Vantage  
-
-### Design Inspiration
-Mint, Robinhood, Personal Capital
-
-### Philosophy
-The Intelligent Investor  
-A Random Walk Down Wall Street  
+*Prices are for educational simulation only. Market data provided by Finnhub, CoinGecko, and CoinPaprika. Data may be delayed. Not suitable for real trading decisions.*
 
 ---
 
-## 💬 Connect
+## AI investors
 
-**Built by:** Yash Kunal Mehta  
-Computer Science & Finance Student  
-Rutgers University New Brunswick  
+Three autonomous agents, each with $10,000 of simulated capital:
 
-**GitHub:** @Yash-Mehtaa  
-**LinkedIn:** https://www.linkedin.com/in/yash-kunal-mehta-182aa4331/  
-**Email:** ym70134@gmail.com  
+| Agent | Strategy | Trades | Reviews |
+|-------|----------|--------|---------|
+| Short-term | Momentum (Jegadeesh-Titman) | Every 30 min, market hours | Weekly |
+| Mid-term | Trend following (MA crossover) | Daily after close | Monthly |
+| Long-term | Risk parity (inverse-vol) | Weekly rebalance | Quarterly |
+
+At each review, the Anthropic Claude API receives the agent's recent performance history (returns, drawdown, Sharpe, trade log) and returns a structured JSON decision: keep, tune parameters, switch strategy template, or blend. Changes are validated against guardrails (max 30% parameter change per cycle) and logged publicly.
+
+Emergency review triggers at 15% drawdown regardless of schedule.
 
 ---
 
-## 🌟 Star This Repo
+## Tech stack
 
-If Asset Universe helped you understand investing better, give it a ⭐️ on GitHub.
+**Frontend**
+- Next.js 16 (App Router)
+- TypeScript
+- Custom CSS (no component library)
 
-**Live Demo:** https://asset-universe.vercel.app
+**AI backend**
+- Python 3.11 / FastAPI
+- SQLAlchemy + SQLite
+- APScheduler
+- Anthropic Claude API (claude-opus)
+- Railway (deployment)
 
-<div align="center">
-Built by a student who believes financial literacy should be accessible to everyone.
-</div>
+**Market data**
+- Finnhub (stocks, ETFs)
+- CoinGecko (crypto)
+- CoinPaprika (crypto backup)
 
+---
+
+## Running locally
+
+**Frontend:**
+```bash
+cd asset-universe
+npm install
+npm run dev
+```
+
+**AI backend:**
+```bash
+cd asset-universe-ai
+cp .env.example .env  # fill in API keys
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python -m app.bootstrap
+python -m app.run_once trade short_term   # test one cycle
+uvicorn app.main:app --reload
+```
+
+---
+
+## Disclaimer
+
+Asset Universe is for educational purposes only. No real money is ever traded. This is not financial, investment, tax, or legal advice. Market data may be delayed. Past performance of the AI agents does not guarantee future results. Always consult a qualified financial advisor before making real investment decisions.
+
+Market data attribution: [Finnhub](https://finnhub.io) · [CoinGecko](https://coingecko.com) · [CoinPaprika](https://coinpaprika.com)
