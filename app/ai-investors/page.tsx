@@ -343,7 +343,7 @@ export default function AIInvestorsPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 24 }}>
           {[
             { num: "01", title: "Real strategies", body: "Momentum, trend-following, and risk parity — published quant strategies used by professional funds." },
-            { num: "02", title: "Live market data", body: "Real prices from Finnhub and Alpha Vantage. The same data as the simulator. No fake numbers." },
+            { num: "02", title: "Live market data", body: "Real prices from Finnhub and CoinGecko. The same data as the simulator. No fake numbers." },
             { num: "03", title: "Claude-powered review", body: "At each cadence, Anthropic's Claude API reviews performance and proposes strategy adjustments." },
             { num: "04", title: "Full transparency", body: "Every trade, every review, every reasoning — all logged here. Nothing hidden." },
           ].map(s => (
