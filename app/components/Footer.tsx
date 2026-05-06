@@ -1,5 +1,4 @@
 import Link from "next/link";
-
 export function Footer() {
   return (
     <footer style={{
@@ -39,18 +38,18 @@ export function Footer() {
               <Link href="/learn" style={{ color: "var(--text-2)" }}>Learn</Link>
               <Link href="/simulate" style={{ color: "var(--text-2)" }}>Simulate</Link>
               <Link href="/ai-investors" style={{ color: "var(--text-2)" }}>AI Investors</Link>
+              <Link href="/terms" style={{ color: "var(--text-2)" }}>Terms of Service</Link>
             </div>
           </div>
           <div>
             <div className="eyebrow" style={{ marginBottom: 14 }}>Data</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 14, color: "var(--text-2)" }}>
               <span>Finnhub</span>
-              <span>Alpha Vantage</span>
               <span>CoinGecko</span>
+              <span>CoinPaprika</span>
             </div>
           </div>
         </div>
-
         <div style={{
           padding: "16px 20px",
           background: "var(--surface)",
@@ -62,10 +61,9 @@ export function Footer() {
             Important
           </div>
           <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text-3)" }}>
-            Asset Universe is for educational purposes only. No real money is ever traded. This is not financial, investment, tax, or legal advice. Past performance does not guarantee future results.
+            Asset Universe is for educational purposes only. No real money is ever traded. This is not financial, investment, tax, or legal advice. Prices may be delayed. Past performance does not guarantee future results.
           </p>
         </div>
-
         <div style={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
           paddingTop: 24,
@@ -76,7 +74,10 @@ export function Footer() {
           letterSpacing: "0.05em",
         }}>
           <span>© 2026 Asset Universe</span>
-          <span>Educational platform · Not a registered investment advisor</span>
+          <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+            <Link href="/terms" style={{ color: "var(--text-3)" }}>Terms of Service</Link>
+            <span>Educational platform · Not a registered investment advisor</span>
+          </div>
         </div>
       </div>
     </footer>
