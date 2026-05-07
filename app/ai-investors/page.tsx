@@ -443,9 +443,17 @@ function CatalystWatchlist() {
 
   useEffect(() => { load(); }, []);
 
+  const getScanKey = () => `catalyst_scan_${new Date().toISOString().slice(0, 10)}`;
+  const canScan = () => { try { return !localStorage.getItem(getScanKey()); } catch { return true; } };
+  const markScanned = () => { try { localStorage.setItem(getScanKey(), "1"); } catch {} };
+  const [scanLimited, setScanLimited] = useState(false);
+
+  useEffect(() => { setScanLimited(!canScan()); }, []);
+
   const triggerScan = async () => {
+    if (!canScan()) { setScanLimited(true); return; }
     setScanning(true);
-    try { await fetch(`${API}/api/catalyst/scan`, { method: "POST" }); await load(); } catch { }
+    try { await fetch(`${API}/api/catalyst/scan`, { method: "POST" }); markScanned(); setScanLimited(true); await load(); } catch { }
     finally { setScanning(false); }
   };
 
@@ -463,7 +471,7 @@ function CatalystWatchlist() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
               {scanDate && <span className="mono" style={{ fontSize: 11, color: "var(--text-3)" }}>Last scan: {timeAgo(scanDate)}</span>}
-              <button onClick={triggerScan} disabled={scanning} className="btn" style={{ fontSize: 12, padding: "8px 16px", opacity: scanning ? 0.6 : 1 }}>{scanning ? "Scanning..." : "Scan Now"}</button>
+              <button onClick={triggerScan} disabled={scanning || scanLimited} className="btn" style={{ fontSize: 12, padding: "8px 16px", opacity: scanning || scanLimited ? 0.5 : 1 }}>{scanning ? "Scanning..." : scanLimited ? "Scanned today" : "Scan Now"}</button>
             </div>
           </div>
         </div>
@@ -473,7 +481,7 @@ function CatalystWatchlist() {
       ) : events.length === 0 ? (
         <div style={{ padding: "32px 24px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", textAlign: "center" }}>
           <div style={{ fontSize: 14, color: "var(--text-3)", marginBottom: 12 }}>No catalyst data yet. The daily scan runs at 6 AM ET, or click Scan Now.</div>
-          <button onClick={triggerScan} disabled={scanning} className="btn btn-primary" style={{ fontSize: 13 }}>{scanning ? "Scanning the web..." : "Run First Scan"}</button>
+          <button onClick={triggerScan} disabled={scanning || scanLimited} className="btn btn-primary" style={{ fontSize: 13 }}>{scanning ? "Scanning the web..." : scanLimited ? "Already scanned today" : "Run First Scan"}</button>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
