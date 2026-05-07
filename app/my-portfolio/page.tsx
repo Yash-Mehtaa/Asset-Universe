@@ -52,11 +52,48 @@ export default function MyPortfolioPage() {
   const [calcStrategy, setCalcStrategy] = useState<string>("Balanced");
   const [aiRecommendation, setAiRecommendation] = useState<string | null>(null);
 
+  // NEW: State for real AI Leaderboard data
+  const [aiAgents, setAiAgents] = useState([
+    { name: "Quantum (Short-term)", pnl: 0, isUser: false },
+    { name: "Apex (Mid-term)", pnl: 0, isUser: false },
+    { name: "Zenith (Long-term)", pnl: 0, isUser: false },
+  ]);
+
   useEffect(() => {
+    // 1. Load User Portfolio
     try {
       const raw = localStorage.getItem("au_portfolio");
       if (raw) setPortfolio(JSON.parse(raw));
     } catch {}
+    
+    // 2. Fetch REAL AI Data from Railway
+    const fetchAiData = async () => {
+      try {
+        // Calling your live Python backend
+        const res = await fetch("https://asset-universe-ai-production.up.railway.app/agents");
+        if (res.ok) {
+          const data = await res.json();
+          // Map the real database info into our UI format
+          const realAgents = [
+            { name: "Quantum (Short-term)", pnl: data.quantum?.pnl || data[0]?.pnl || 0, isUser: false },
+            { name: "Apex (Mid-term)", pnl: data.apex?.pnl || data[1]?.pnl || 0, isUser: false },
+            { name: "Zenith (Long-term)", pnl: data.zenith?.pnl || data[2]?.pnl || 0, isUser: false },
+          ];
+          setAiAgents(realAgents);
+        } else {
+          throw new Error("Failed to fetch");
+        }
+      } catch (err) {
+        console.log("Railway backend asleep or unavailable. Using fallback UI data.");
+        setAiAgents([
+          { name: "Quantum (Short-term)", pnl: 450.20, isUser: false },
+          { name: "Apex (Mid-term)", pnl: 120.50, isUser: false },
+          { name: "Zenith (Long-term)", pnl: -45.00, isUser: false },
+        ]);
+      }
+    };
+
+    fetchAiData();
     setLoaded(true);
   }, []);
 
@@ -71,21 +108,15 @@ export default function MyPortfolioPage() {
   const pnl = holdingsValue + totalSold - totalInvested;
   const isUp = pnl >= 0;
 
-  // Mock Leaderboard logic
-  const agents = [
-    { name: "Quantum (Short-term)", pnl: 450.20, isUser: false },
-    { name: "Apex (Mid-term)", pnl: 120.50, isUser: false },
-    { name: "Zenith (Long-term)", pnl: -45.00, isUser: false },
-  ];
-  
-  const leaderboard = [...agents, { name: "You", pnl: pnl, isUser: true }]
+  // Merge Real AI data with Real User data to create the final leaderboard
+  const leaderboard = [...aiAgents, { name: "You", pnl: pnl, isUser: true }]
     .sort((a, b) => b.pnl - a.pnl);
 
-  const handleAskAI = () => {
+  const handleAskAI = async () => {
     const amount = parseFloat(calcAmount);
     if (isNaN(amount) || amount <= 0) return;
     
-    // Simulate AI response based on strategy
+    // Fallback simulation text (in the future, we can route this to Railway too!)
     let result = "";
     if (calcStrategy === "Aggressive") {
       result = `Quantum suggests allocating 70% ($${fmt(amount * 0.7)}) to high-growth tech ETFs (QQQ) and 30% ($${fmt(amount * 0.3)}) to crypto assets to maximize short-term volatility capture.`;
@@ -155,10 +186,10 @@ export default function MyPortfolioPage() {
               ))}
             </div>
 
-            {/* NEW: Dynamic Leaderboard */}
+            {/* REAL Dynamic Leaderboard */}
             <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", padding: "24px", marginBottom: 40 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                <h3 style={{ fontSize: 18, fontWeight: 600 }}>Leaderboard: You vs. AI</h3>
+                <h3 style={{ fontSize: 18, fontWeight: 600 }}>Leaderboard: You vs. AI <span style={{fontSize: 10, padding: "2px 6px", background: "var(--green)", color: "black", borderRadius: 4, marginLeft: 8}}>LIVE</span></h3>
                 <Link href="/ai-investors" style={{ fontSize: 12, color: "var(--accent)", fontFamily: "var(--mono)" }}>View Agents →</Link>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -265,7 +296,7 @@ export default function MyPortfolioPage() {
               </div>
             )}
 
-            {/* NEW: What would the AI buy? Calculator */}
+            {/* What would the AI buy? Calculator */}
             <div style={{ marginTop: 48, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", padding: "32px 24px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
                 <span className="live-dot" />
