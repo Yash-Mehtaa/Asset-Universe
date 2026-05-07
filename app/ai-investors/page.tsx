@@ -43,67 +43,26 @@ function timeAgo(iso: string) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-// ── Rate limit helpers (localStorage) ─────────────────────────────────────────
-function getRateLimitKey(agentName: string) {
-  return `run_limit_${agentName}_${new Date().toISOString().slice(0, 10)}`;
-}
-function getRunCount(agentName: string): number {
-  try { return parseInt(localStorage.getItem(getRateLimitKey(agentName)) || "0", 10); } catch { return 0; }
-}
-function incrementRunCount(agentName: string): number {
-  try {
-    const key = getRateLimitKey(agentName);
-    const next = getRunCount(agentName) + 1;
-    localStorage.setItem(key, String(next));
-    return next;
-  } catch { return 1; }
-}
+function getRateLimitKey(agentName: string) { return `run_limit_${agentName}_${new Date().toISOString().slice(0, 10)}`; }
+function getRunCount(agentName: string): number { try { return parseInt(localStorage.getItem(getRateLimitKey(agentName)) || "0", 10); } catch { return 0; } }
+function incrementRunCount(agentName: string): number { try { const key = getRateLimitKey(agentName); const next = getRunCount(agentName) + 1; localStorage.setItem(key, String(next)); return next; } catch { return 1; } }
 function canRun(agentName: string): boolean { return getRunCount(agentName) < RATE_LIMIT; }
 
-// ── Calculator: pure strategy allocation (no Claude, $0) ──────────────────────
 function calcPureStrategy(amount: number, strategy: string): CalcResult {
   const pools: Record<string, { symbols: string[]; weights: number[] }> = {
     momentum: { symbols: ["NVDA", "MSFT", "AAPL", "META", "AMZN"], weights: [0.30, 0.25, 0.20, 0.15, 0.10] },
     trend_following: { symbols: ["SPY", "QQQ", "AAPL", "MSFT", "GOOGL"], weights: [0.28, 0.24, 0.20, 0.16, 0.12] },
     risk_parity: { symbols: ["SPY", "BND", "GLD", "QQQ", "VTI"], weights: [0.25, 0.25, 0.20, 0.15, 0.15] },
   };
-  const names: Record<string, string> = {
-    NVDA: "NVIDIA Corp", MSFT: "Microsoft", AAPL: "Apple", META: "Meta Platforms", AMZN: "Amazon",
-    SPY: "S&P 500 ETF", QQQ: "Nasdaq 100 ETF", GOOGL: "Alphabet", BND: "Total Bond ETF",
-    GLD: "Gold ETF", VTI: "Total Stock Market ETF",
-  };
+  const names: Record<string, string> = { NVDA: "NVIDIA Corp", MSFT: "Microsoft", AAPL: "Apple", META: "Meta Platforms", AMZN: "Amazon", SPY: "S&P 500 ETF", QQQ: "Nasdaq 100 ETF", GOOGL: "Alphabet", BND: "Total Bond ETF", GLD: "Gold ETF", VTI: "Total Stock Market ETF" };
   const reasons: Record<string, Record<string, string>> = {
-    momentum: {
-      NVDA: "Highest recent momentum in the universe — AI infrastructure demand continues to drive outperformance.",
-      MSFT: "Strong daily trend with cloud and AI tailwinds sustaining above-average price momentum.",
-      AAPL: "Consistent upward momentum backed by services growth and robust cash flow generation.",
-      META: "Advertising revenue acceleration and AI monetization driving strong price momentum.",
-      AMZN: "AWS growth and e-commerce recovery creating positive price trend across multiple timeframes.",
-    },
-    trend_following: {
-      SPY: "Broad market in confirmed uptrend — 50-day above 200-day moving average, higher highs and lows.",
-      QQQ: "Tech-heavy index showing strongest trend signal with price above all major moving averages.",
-      AAPL: "Clean uptrend structure with consistent higher highs — trend following signal is clear.",
-      MSFT: "Price above 20, 50, and 200-day MAs with no sign of trend reversal.",
-      GOOGL: "Recovering uptrend after consolidation — trend following entry signal confirmed.",
-    },
-    risk_parity: {
-      SPY: "Equity allocation weighted by inverse volatility — lower vol gets higher weight in risk parity.",
-      BND: "Bond allocation provides portfolio ballast and offsets equity drawdown risk.",
-      GLD: "Gold's low correlation to equities reduces overall portfolio volatility and tail risk.",
-      QQQ: "Growth allocation sized smaller given higher volatility relative to broad market.",
-      VTI: "Total market diversification smooths idiosyncratic stock risk at the portfolio level.",
-    },
+    momentum: { NVDA: "Highest recent momentum in the universe — AI infrastructure demand continues to drive outperformance.", MSFT: "Strong daily trend with cloud and AI tailwinds sustaining above-average price momentum.", AAPL: "Consistent upward momentum backed by services growth and robust cash flow generation.", META: "Advertising revenue acceleration and AI monetization driving strong price momentum.", AMZN: "AWS growth and e-commerce recovery creating positive price trend across multiple timeframes." },
+    trend_following: { SPY: "Broad market in confirmed uptrend — 50-day above 200-day moving average, higher highs and lows.", QQQ: "Tech-heavy index showing strongest trend signal with price above all major moving averages.", AAPL: "Clean uptrend structure with consistent higher highs — trend following signal is clear.", MSFT: "Price above 20, 50, and 200-day MAs with no sign of trend reversal.", GOOGL: "Recovering uptrend after consolidation — trend following entry signal confirmed." },
+    risk_parity: { SPY: "Equity allocation weighted by inverse volatility — lower vol gets higher weight in risk parity.", BND: "Bond allocation provides portfolio ballast and offsets equity drawdown risk.", GLD: "Gold's low correlation to equities reduces overall portfolio volatility and tail risk.", QQQ: "Growth allocation sized smaller given higher volatility relative to broad market.", VTI: "Total market diversification smooths idiosyncratic stock risk at the portfolio level." },
   };
   const pool = pools[strategy] || pools.momentum;
   const stratReasons = reasons[strategy] || reasons.momentum;
-  const allocations: CalcAllocation[] = pool.symbols.map((sym, i) => ({
-    symbol: sym,
-    name: names[sym] || sym,
-    amount: Math.round(amount * pool.weights[i]),
-    pct: Math.round(pool.weights[i] * 100),
-    reason: stratReasons[sym] || "Allocated based on strategy weighting.",
-  }));
+  const allocations: CalcAllocation[] = pool.symbols.map((sym, i) => ({ symbol: sym, name: names[sym] || sym, amount: Math.round(amount * pool.weights[i]), pct: Math.round(pool.weights[i] * 100), reason: stratReasons[sym] || "Allocated based on strategy weighting." }));
   const summaries: Record<string, string> = {
     momentum: "Momentum strategy concentrates in the strongest recent performers. Highest-momentum names get the largest allocations based on recent price strength.",
     trend_following: "Trend following allocates to assets in confirmed uptrends using moving average signals. Positions are sized equally across confirmed trends.",
@@ -112,7 +71,6 @@ function calcPureStrategy(amount: number, strategy: string): CalcResult {
   return { allocations, summary: summaries[strategy] || summaries.momentum };
 }
 
-// ── Sub-components ─────────────────────────────────────────────────────────────
 function MiniChart({ points, isUp }: { points: PerfPoint[]; isUp: boolean }) {
   if (points.length < 2) return <div style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-3)", fontSize: 12, fontFamily: "var(--mono)" }}>Awaiting data...</div>;
   const vals = points.map(p => p.value);
@@ -267,27 +225,26 @@ function AgentCard({ agent, onRun }: { agent: Agent; onRun: () => void }) {
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 8 }}>
+      <div>
         <button
           className="btn btn-primary"
           onClick={handleRun}
           disabled={running || rateLimited}
-          style={{ flex: 1, justifyContent: "center", opacity: running || rateLimited ? 0.5 : 1, cursor: rateLimited ? "not-allowed" : "pointer" }}
+          style={{ width: "100%", justifyContent: "center", opacity: running || rateLimited ? 0.5 : 1, cursor: rateLimited ? "not-allowed" : "pointer" }}
         >
-          {running ? "Running..." : rateLimited ? "Limit reached (3/day)" : `Run Now ${runsLeft < RATE_LIMIT ? `(${runsLeft} left)` : ""}`}
+          {running ? "Running..." : rateLimited ? "Limit reached (3/day)" : `Run Now${runsLeft < RATE_LIMIT ? ` (${runsLeft} left)` : ""}`}
         </button>
+        {rateLimited && (
+          <div style={{ fontSize: 12, color: "var(--text-3)", textAlign: "center", marginTop: 8 }}>
+            Daily limit of {RATE_LIMIT} manual runs reached. Resets at midnight.
+          </div>
+        )}
       </div>
-
-      {rateLimited && (
-        <div style={{ fontSize: 12, color: "var(--text-3)", textAlign: "center", marginTop: -12 }}>
-          Daily limit of {RATE_LIMIT} manual runs reached. Resets at midnight.
-        </div>
-      )}
 
       {runResult && <RunResultPanel result={runResult} onClose={() => setRunResult(null)} />}
 
       <div style={{ borderTop: "1px solid var(--border)", paddingTop: 20 }}>
-        <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+        <div style={{ display: "flex", gap: 4, marginBottom: 16, flexWrap: "wrap" }}>
           {(["overview", "trades", "decisions", "history"] as const).map(t => (
             <button key={t} onClick={() => setTab(t)} style={{ padding: "6px 12px", borderRadius: "var(--radius)", fontSize: 12, fontFamily: "var(--mono)", border: "1px solid", borderColor: tab === t ? "var(--accent)" : "var(--border)", background: tab === t ? "var(--accent-soft)" : "transparent", color: tab === t ? "var(--accent)" : "var(--text-3)", cursor: "pointer", letterSpacing: "0.04em" }}>
               {t}
@@ -381,13 +338,11 @@ function AgentCard({ agent, onRun }: { agent: Agent; onRun: () => void }) {
 }
 
 function Ticker({ agents }: { agents: Agent[] }) {
-  const items = agents.flatMap(a => [
-    `${META[a.name as keyof typeof META]?.label} · $${(a.total_value / 1000).toFixed(1)}k · ${a.pnl_pct >= 0 ? "+" : ""}${(a.pnl_pct * 100).toFixed(2)}%`,
-  ]);
+  const items = agents.flatMap(a => [`${META[a.name as keyof typeof META]?.label} · $${(a.total_value / 1000).toFixed(1)}k · ${a.pnl_pct >= 0 ? "+" : ""}${(a.pnl_pct * 100).toFixed(2)}%`]);
   if (!items.length) return null;
   const text = items.join("   ·   ");
   return (
-    <div style={{ overflow: "hidden", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", padding: "10px 0", marginBottom: 0 }}>
+    <div style={{ overflow: "hidden", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", padding: "10px 0" }}>
       <div style={{ display: "flex", gap: 60, animation: "ticker 30s linear infinite", whiteSpace: "nowrap", fontFamily: "var(--mono)", fontSize: 12, color: "var(--text-3)" }}>
         {[text, text, text].map((t, i) => <span key={i}>{t}</span>)}
       </div>
@@ -397,9 +352,7 @@ function Ticker({ agents }: { agents: Agent[] }) {
 
 function DecisionTimeline() {
   const [items, setItems] = useState<TimelineItem[]>([]);
-  useEffect(() => {
-    fetch(`${API}/api/timeline?limit=20`).then(r => r.json()).then(setItems).catch(() => {});
-  }, []);
+  useEffect(() => { fetch(`${API}/api/timeline?limit=20`).then(r => r.json()).then(setItems).catch(() => {}); }, []);
   return (
     <section className="section">
       <div style={{ display: "flex", alignItems: "baseline", gap: 24, marginBottom: 48, paddingBottom: 24, borderBottom: "1px solid var(--border)" }}>
@@ -422,9 +375,7 @@ function DecisionTimeline() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, flexWrap: "wrap", gap: 8 }}>
                 <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                  <span className="mono" style={{ fontSize: 13, fontWeight: 700 }}>
-                    {item.type === "trade" ? item.symbol : META[item.agent_name as keyof typeof META]?.label || item.agent_name}
-                  </span>
+                  <span className="mono" style={{ fontSize: 13, fontWeight: 700 }}>{item.type === "trade" ? item.symbol : META[item.agent_name as keyof typeof META]?.label || item.agent_name}</span>
                   {item.type === "trade" && item.notional && <span className="mono" style={{ fontSize: 11, color: "var(--text-3)" }}>${fmt(item.notional, 0)}</span>}
                 </div>
                 <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -432,9 +383,7 @@ function DecisionTimeline() {
                   <span className="mono" style={{ fontSize: 11, color: "var(--text-3)" }}>{timeAgo(item.timestamp)}</span>
                 </div>
               </div>
-              <div style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.6 }}>
-                {item.type === "trade" ? (item.ai_reasoning || item.rationale || "") : (item.reasoning || "").slice(0, 200)}
-              </div>
+              <div style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.6 }}>{item.type === "trade" ? (item.ai_reasoning || item.rationale || "") : (item.reasoning || "").slice(0, 200)}</div>
             </div>
           </div>
         ))}
@@ -444,7 +393,6 @@ function DecisionTimeline() {
 }
 
 function Leaderboard({ agents }: { agents: Agent[] }) {
-  const [userTotalInvested] = useState(0);
   const sorted = [...agents].sort((a, b) => b.pnl_pct - a.pnl_pct);
   return (
     <section className="section">
@@ -467,16 +415,14 @@ function Leaderboard({ agents }: { agents: Agent[] }) {
                 <div className="eyebrow" style={{ fontSize: 10 }}>{meta.strategy}</div>
               </div>
               <div className="mono" style={{ fontSize: 14, textAlign: "right" }}>${fmt(a.total_value, 0)}</div>
-              <div className={`mono`} style={{ fontSize: 14, fontWeight: 700, color: isUp ? "var(--green)" : "var(--red)", textAlign: "right", minWidth: 72 }}>{isUp ? "+" : ""}{fmt(a.pnl_pct * 100)}%</div>
+              <div className="mono" style={{ fontSize: 14, fontWeight: 700, color: isUp ? "var(--green)" : "var(--red)", textAlign: "right", minWidth: 72 }}>{isUp ? "+" : ""}{fmt(a.pnl_pct * 100)}%</div>
             </div>
           );
         })}
       </div>
-      {userTotalInvested === 0 && (
-        <div style={{ marginTop: 20, padding: "16px 20px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--text-2)", textAlign: "center" }}>
-          Your portfolio is empty. <Link href="/simulate" style={{ color: "var(--accent)" }}>Go to the simulator →</Link> to make some trades and appear on the leaderboard.
-        </div>
-      )}
+      <div style={{ marginTop: 20, padding: "16px 20px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: 13, color: "var(--text-2)", textAlign: "center" }}>
+        <Link href="/simulate" style={{ color: "var(--accent)" }}>Go to the simulator →</Link> to make trades and appear on the leaderboard.
+      </div>
     </section>
   );
 }
@@ -490,10 +436,7 @@ function CatalystWatchlist() {
   const load = () => {
     fetch(`${API}/api/catalyst`)
       .then(r => r.json())
-      .then((data: CatalystEvent[]) => {
-        setEvents(Array.isArray(data) ? data : []);
-        if (data.length > 0) setScanDate(data[0].scan_date);
-      })
+      .then((data: CatalystEvent[]) => { setEvents(Array.isArray(data) ? data : []); if (data.length > 0) setScanDate(data[0].scan_date); })
       .catch(() => setEvents([]))
       .finally(() => setLoading(false));
   };
@@ -502,17 +445,11 @@ function CatalystWatchlist() {
 
   const triggerScan = async () => {
     setScanning(true);
-    try {
-      await fetch(`${API}/api/catalyst/scan`, { method: "POST" });
-      await load();
-    } catch { } finally { setScanning(false); }
+    try { await fetch(`${API}/api/catalyst/scan`, { method: "POST" }); await load(); } catch { }
+    finally { setScanning(false); }
   };
 
-  const impactColor = (impact: string) => {
-    if (impact === "bullish") return "var(--green)";
-    if (impact === "bearish") return "var(--red)";
-    return "var(--text-3)";
-  };
+  const impactColor = (impact: string) => impact === "bullish" ? "var(--green)" : impact === "bearish" ? "var(--red)" : "var(--text-3)";
 
   return (
     <section className="section">
@@ -526,22 +463,17 @@ function CatalystWatchlist() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
               {scanDate && <span className="mono" style={{ fontSize: 11, color: "var(--text-3)" }}>Last scan: {timeAgo(scanDate)}</span>}
-              <button onClick={triggerScan} disabled={scanning} className="btn" style={{ fontSize: 12, padding: "8px 16px", opacity: scanning ? 0.6 : 1 }}>
-                {scanning ? "Scanning..." : "Scan Now"}
-              </button>
+              <button onClick={triggerScan} disabled={scanning} className="btn" style={{ fontSize: 12, padding: "8px 16px", opacity: scanning ? 0.6 : 1 }}>{scanning ? "Scanning..." : "Scan Now"}</button>
             </div>
           </div>
         </div>
       </div>
-
       {loading ? (
         <div style={{ color: "var(--text-3)", fontSize: 14 }}>Loading catalyst data...</div>
       ) : events.length === 0 ? (
         <div style={{ padding: "32px 24px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", textAlign: "center" }}>
           <div style={{ fontSize: 14, color: "var(--text-3)", marginBottom: 12 }}>No catalyst data yet. The daily scan runs at 6 AM ET, or click Scan Now.</div>
-          <button onClick={triggerScan} disabled={scanning} className="btn btn-primary" style={{ fontSize: 13 }}>
-            {scanning ? "Scanning the web..." : "Run First Scan"}
-          </button>
+          <button onClick={triggerScan} disabled={scanning} className="btn btn-primary" style={{ fontSize: 13 }}>{scanning ? "Scanning the web..." : "Run First Scan"}</button>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -557,11 +489,7 @@ function CatalystWatchlist() {
                 <div style={{ fontFamily: "var(--serif)", fontSize: 17, marginBottom: 8, lineHeight: 1.4 }}>{e.title}</div>
                 <div style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.65 }}>{e.description}</div>
               </div>
-              <div style={{ textAlign: "right" }}>
-                <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: impactColor(e.expected_impact) }}>
-                  {e.expected_impact === "bullish" ? "▲" : e.expected_impact === "bearish" ? "▼" : "—"} {e.expected_impact}
-                </span>
-              </div>
+              <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: impactColor(e.expected_impact) }}>{e.expected_impact === "bullish" ? "▲" : e.expected_impact === "bearish" ? "▼" : "—"} {e.expected_impact}</span>
             </div>
           ))}
         </div>
@@ -579,11 +507,7 @@ function WeeklyReviewSection() {
     Promise.all([
       fetch(`${API}/api/review-summary`).then(r => r.json()).catch(() => ({ available: false })),
       fetch(`${API}/api/budget`).then(r => r.json()).catch(() => null),
-    ]).then(([s, b]) => {
-      setSummary(s);
-      setBudget(b);
-      setLoading(false);
-    });
+    ]).then(([s, b]) => { setSummary(s); setBudget(b); setLoading(false); });
   }, []);
 
   const dirColor = (dir: string) => dir === "up" ? "var(--green)" : dir === "down" ? "var(--red)" : "var(--accent)";
@@ -619,8 +543,8 @@ function WeeklyReviewSection() {
       {loading ? (
         <div style={{ color: "var(--text-3)", fontSize: 14 }}>Loading review data...</div>
       ) : !summary?.available ? (
-        <div style={{ padding: "32px 24px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", textAlign: "center" }}>
-          <div style={{ fontSize: 14, color: "var(--text-3)" }}>No weekly review has run yet. The first review runs this Sunday at 10 PM ET. Run Now on any agent to trigger an individual review.</div>
+        <div style={{ padding: "32px 24px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", textAlign: "center", fontSize: 14, color: "var(--text-3)" }}>
+          No weekly review has run yet. The first review runs this Sunday at 10 PM ET.
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -640,11 +564,9 @@ function WeeklyReviewSection() {
           {summary.performance_analysis && (
             <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", padding: "24px 28px" }}>
               <div className="eyebrow" style={{ fontSize: 10, marginBottom: 16 }}>Claude's Performance Analysis</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {summary.performance_analysis.split("\n\n").filter(Boolean).map((para, i) => (
-                  <p key={i} style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.7 }}>{para}</p>
-                ))}
-              </div>
+              {summary.performance_analysis.split("\n\n").filter(Boolean).map((para, i) => (
+                <p key={i} style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.7, marginBottom: 12 }}>{para}</p>
+              ))}
             </div>
           )}
 
@@ -688,10 +610,7 @@ function AICalculator() {
   const [strategy, setStrategy] = useState("momentum");
   const [result, setResult] = useState<CalcResult | null>(null);
 
-  const calculate = () => {
-    const parsed = parseFloat(amount) || 10000;
-    setResult(calcPureStrategy(parsed, strategy));
-  };
+  const calculate = () => { setResult(calcPureStrategy(parseFloat(amount) || 10000, strategy)); };
 
   return (
     <section className="section">
@@ -699,10 +618,9 @@ function AICalculator() {
         <span className="mono" style={{ fontSize: 12, color: "var(--text-3)" }}>VI.</span>
         <div>
           <h2 style={{ fontSize: "clamp(28px, 4vw, 44px)", marginBottom: 6 }}>What would the AI buy?</h2>
-          <p style={{ fontSize: 15, color: "var(--text-2)" }}>Enter any amount. The strategy algorithm instantly shows how it would allocate — no API call, no wait.</p>
+          <p style={{ fontSize: 15, color: "var(--text-2)" }}>Enter any amount. The strategy algorithm shows the allocation instantly — no API call, no wait.</p>
         </div>
       </div>
-
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 12, marginBottom: 32, alignItems: "end" }}>
         <div>
           <label style={{ display: "block", fontSize: 12, color: "var(--text-3)", marginBottom: 8, fontFamily: "var(--mono)", letterSpacing: "0.05em" }}>AMOUNT TO INVEST</label>
@@ -720,12 +638,9 @@ function AICalculator() {
           </select>
         </div>
         <div style={{ display: "flex", alignItems: "flex-end" }}>
-          <button className="btn btn-primary" onClick={calculate} style={{ width: "100%", justifyContent: "center" }}>
-            Calculate →
-          </button>
+          <button className="btn btn-primary" onClick={calculate} style={{ width: "100%", justifyContent: "center" }}>Calculate →</button>
         </div>
       </div>
-
       {result && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ background: "var(--accent-soft)", border: "1px solid var(--accent-strong)", borderRadius: "var(--radius-lg)", padding: "18px 22px" }}>
@@ -763,7 +678,6 @@ export default function AIInvestorsPage() {
   const [loading, setLoading] = useState(true);
 
   const load = () => { fetch(`${API}/api/agents`).then(r => r.json()).then(setAgents).catch(() => {}).finally(() => setLoading(false)); };
-
   useEffect(() => { load(); const id = setInterval(load, 30000); return () => clearInterval(id); }, []);
 
   const totalValue = agents.reduce((s, a) => s + a.total_value, 0);
