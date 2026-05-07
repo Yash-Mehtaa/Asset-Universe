@@ -128,6 +128,36 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* NEW: Leaderboard Teaser Section */}
+      <section className="section">
+        <div style={{
+          background: "var(--surface)", border: "1px solid var(--border)",
+          borderRadius: "var(--radius-lg)", padding: "60px 48px",
+          textAlign: "center", marginBottom: 40
+        }}>
+          <h2 style={{ fontSize: "clamp(28px, 4vw, 44px)", marginBottom: 16 }}>
+            Can you <em style={{ color: "var(--accent)", fontStyle: "italic", fontWeight: 400 }}>beat</em> the AI?
+          </h2>
+          <p style={{ fontSize: 16, color: "var(--text-2)", marginBottom: 32, maxWidth: 500, margin: "0 auto 32px" }}>
+            Test your investment strategies against three autonomous trading agents and climb the leaderboard.
+          </p>
+          
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 400, margin: "0 auto 40px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "16px 20px", background: "var(--surface-2)", borderRadius: "var(--radius)" }}>
+              <span style={{ fontWeight: 500 }}>1. Quantum (AI)</span> <span style={{ color: "var(--green)", fontFamily: "var(--mono)" }}>+$450.20</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "16px 20px", border: "1px solid var(--accent)", borderRadius: "var(--radius)", background: "var(--accent-soft)" }}>
+              <span style={{ fontWeight: 600, color: "var(--accent)" }}>2. You</span> <span style={{ color: "var(--accent)", fontFamily: "var(--mono)", fontWeight: 600 }}>+$124.50</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "16px 20px", background: "var(--surface-2)", borderRadius: "var(--radius)" }}>
+              <span style={{ fontWeight: 500, color: "var(--text-2)" }}>3. Zenith (AI)</span> <span style={{ color: "var(--red)", fontFamily: "var(--mono)" }}>-$45.00</span>
+            </div>
+          </div>
+
+          <Link href="/my-portfolio" className="btn btn-primary">Check your rank →</Link>
+        </div>
+      </section>
+
       <section className="section">
         <div style={{
           background: "var(--surface)",

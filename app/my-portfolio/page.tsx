@@ -46,6 +46,11 @@ export default function MyPortfolioPage() {
   const [portfolio, setPortfolio] = useState<Portfolio>({ holdings: [], trades: [] });
   const [tab, setTab] = useState<"holdings" | "trades">("holdings");
   const [loaded, setLoaded] = useState(false);
+  
+  // Calculator state
+  const [calcAmount, setCalcAmount] = useState<string>("1000");
+  const [calcStrategy, setCalcStrategy] = useState<string>("Balanced");
+  const [aiRecommendation, setAiRecommendation] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -62,8 +67,35 @@ export default function MyPortfolioPage() {
   const totalSold = portfolio.trades
     .filter(t => t.side === "sell")
     .reduce((s, t) => s + t.total, 0);
+  
   const pnl = holdingsValue + totalSold - totalInvested;
   const isUp = pnl >= 0;
+
+  // Mock Leaderboard logic
+  const agents = [
+    { name: "Quantum (Short-term)", pnl: 450.20, isUser: false },
+    { name: "Apex (Mid-term)", pnl: 120.50, isUser: false },
+    { name: "Zenith (Long-term)", pnl: -45.00, isUser: false },
+  ];
+  
+  const leaderboard = [...agents, { name: "You", pnl: pnl, isUser: true }]
+    .sort((a, b) => b.pnl - a.pnl);
+
+  const handleAskAI = () => {
+    const amount = parseFloat(calcAmount);
+    if (isNaN(amount) || amount <= 0) return;
+    
+    // Simulate AI response based on strategy
+    let result = "";
+    if (calcStrategy === "Aggressive") {
+      result = `Quantum suggests allocating 70% ($${fmt(amount * 0.7)}) to high-growth tech ETFs (QQQ) and 30% ($${fmt(amount * 0.3)}) to crypto assets to maximize short-term volatility capture.`;
+    } else if (calcStrategy === "Conservative") {
+      result = `Zenith recommends a defensive stance: 60% ($${fmt(amount * 0.6)}) in Treasury bond ETFs (TLT) and 40% ($${fmt(amount * 0.4)}) in broad-market index funds (VOO) to preserve capital.`;
+    } else {
+      result = `Apex advises a balanced mix: 50% ($${fmt(amount * 0.5)}) in S&P 500 (VOO), 30% ($${fmt(amount * 0.3)}) in international markets (VXUS), and 20% ($${fmt(amount * 0.2)}) in commodities (GLD).`;
+    }
+    setAiRecommendation(result);
+  };
 
   const resetPortfolio = () => {
     if (!confirm("Reset your portfolio? This cannot be undone.")) return;
@@ -121,6 +153,35 @@ export default function MyPortfolioPage() {
                   <div style={{ fontFamily: "var(--serif)", fontSize: 22, fontWeight: 500, color: s.color }}>{s.value}</div>
                 </div>
               ))}
+            </div>
+
+            {/* NEW: Dynamic Leaderboard */}
+            <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", padding: "24px", marginBottom: 40 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 600 }}>Leaderboard: You vs. AI</h3>
+                <Link href="/ai-investors" style={{ fontSize: 12, color: "var(--accent)", fontFamily: "var(--mono)" }}>View Agents →</Link>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {leaderboard.map((entry, index) => (
+                  <div key={entry.name} style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: "12px 16px",
+                    background: entry.isUser ? "var(--accent-soft)" : "var(--surface-2)",
+                    border: entry.isUser ? "1px solid var(--accent)" : "1px solid transparent",
+                    borderRadius: "var(--radius)"
+                  }}>
+                    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                      <span className="mono" style={{ color: "var(--text-3)", width: 20 }}>{index + 1}.</span>
+                      <span style={{ fontWeight: entry.isUser ? 600 : 400, color: entry.isUser ? "var(--accent)" : "inherit" }}>
+                        {entry.name}
+                      </span>
+                    </div>
+                    <span className="mono" style={{ color: entry.pnl >= 0 ? "var(--green)" : "var(--red)", fontWeight: entry.isUser ? 600 : 400 }}>
+                      {entry.pnl >= 0 ? "+" : ""}${fmt(entry.pnl)}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: "1px solid var(--border)" }}>
@@ -204,6 +265,50 @@ export default function MyPortfolioPage() {
               </div>
             )}
 
+            {/* NEW: What would the AI buy? Calculator */}
+            <div style={{ marginTop: 48, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", padding: "32px 24px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+                <span className="live-dot" />
+                <h3 style={{ fontSize: 20, fontWeight: 600 }}>What would the AI buy?</h3>
+              </div>
+              <p style={{ fontSize: 14, color: "var(--text-2)", marginBottom: 24 }}>
+                Input a cash amount and select a strategy to see how our autonomous agents would deploy your capital today.
+              </p>
+              
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
+                <div style={{ flex: "1 1 200px" }}>
+                  <label style={{ display: "block", fontSize: 12, color: "var(--text-3)", marginBottom: 8, fontFamily: "var(--mono)", textTransform: "uppercase" }}>Amount ($)</label>
+                  <input 
+                    type="number" 
+                    value={calcAmount} 
+                    onChange={e => setCalcAmount(e.target.value)}
+                    style={{ width: "100%", padding: "12px 16px", background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", color: "var(--text)", outline: "none" }}
+                  />
+                </div>
+                <div style={{ flex: "1 1 200px" }}>
+                  <label style={{ display: "block", fontSize: 12, color: "var(--text-3)", marginBottom: 8, fontFamily: "var(--mono)", textTransform: "uppercase" }}>Strategy</label>
+                  <select 
+                    value={calcStrategy}
+                    onChange={e => setCalcStrategy(e.target.value)}
+                    style={{ width: "100%", padding: "12px 16px", background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", color: "var(--text)", outline: "none", appearance: "none" }}
+                  >
+                    <option>Conservative</option>
+                    <option>Balanced</option>
+                    <option>Aggressive</option>
+                  </select>
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-end" }}>
+                  <button onClick={handleAskAI} className="btn btn-primary" style={{ height: "45px" }}>Ask AI</button>
+                </div>
+              </div>
+
+              {aiRecommendation && (
+                <div className="fadeup" style={{ padding: "16px 20px", background: "var(--accent-soft)", border: "1px solid var(--accent)", borderRadius: "var(--radius)", marginTop: 16 }}>
+                  <p style={{ fontSize: 14, lineHeight: 1.6, color: "var(--text)" }}>{aiRecommendation}</p>
+                </div>
+              )}
+            </div>
+
             <button onClick={resetPortfolio} style={{
               marginTop: 40, fontSize: 12, color: "var(--text-3)",
               fontFamily: "var(--mono)", cursor: "pointer",
@@ -213,18 +318,15 @@ export default function MyPortfolioPage() {
 
         <div style={{ marginTop: 48 }}>
           <div className="card" style={{
-            background: "var(--accent-soft)", borderColor: "var(--accent-strong)",
+            background: "var(--surface-2)", borderColor: "var(--border)",
             display: "flex", justifyContent: "space-between", alignItems: "center",
             gap: 24, flexWrap: "wrap",
           }}>
             <div>
-              <span className="tag tag-accent" style={{ marginBottom: 12 }}>
-                <span className="live-dot" /> LIVE
-              </span>
-              <h3 style={{ fontSize: 22, margin: "12px 0 6px" }}>Watch AI investors trade in real time</h3>
-              <p style={{ fontSize: 14 }}>Three autonomous agents using real strategies on simulated capital.</p>
+              <h3 style={{ fontSize: 22, margin: "0 0 6px" }}>Deep dive into the agents</h3>
+              <p style={{ fontSize: 14, color: "var(--text-2)" }}>See the full logic, risk parameters, and trade history for all three bots.</p>
             </div>
-            <Link href="/ai-investors" className="btn btn-primary">View AI investors →</Link>
+            <Link href="/ai-investors" className="btn btn-ghost" style={{ border: "1px solid var(--border)" }}>View logic →</Link>
           </div>
         </div>
       </section>
