@@ -21,7 +21,25 @@ type Agent = {
   last_review_at: string | null;
 };
 
-type Trade = { id: number; symbol: string; side: string; quantity: number; price: number; notional: number; rationale: string; executed_at: string };
+type Trade = {
+  id: number;
+  symbol: string;
+  side: string;
+  quantity: number;
+  price: number;
+  notional: number;
+  rationale: string;
+  realized_pnl?: number | null;
+  ai_reasoning?: string | null;
+  executed_at: string;
+};
+
+type RunResult = {
+  n_trades: number;
+  trades: { symbol: string; side: string; price: number; notional: number; rationale: string; realized_pnl: number | null; ai_reasoning: string | null }[];
+  no_trade_reason: string | null;
+};
+
 type Decision = { id: number; action: string; reasoning: string; created_at: string };
 type Holding = { symbol: string; quantity: number; avg_cost: number; current_price: number; value: number; pnl_pct: number };
 type PerfPoint = { date: string; value: number; pnl_pct: number };
@@ -71,6 +89,69 @@ function MiniChart({ points, isUp }: { points: PerfPoint[]; isUp: boolean }) {
   );
 }
 
+function RunResultPanel({ result, onClose }: { result: RunResult; onClose: () => void }) {
+  const traded = result.n_trades > 0;
+  return (
+    <div style={{
+      background: traded ? "rgba(127,168,134,0.06)" : "rgba(201,168,117,0.06)",
+      border: `1px solid ${traded ? "rgba(127,168,134,0.3)" : "rgba(201,168,117,0.3)"}`,
+      borderRadius: "var(--radius-lg)",
+      padding: 20,
+      position: "relative",
+    }}>
+      <button onClick={onClose} style={{
+        position: "absolute", top: 12, right: 14,
+        fontSize: 16, color: "var(--text-3)", cursor: "pointer", background: "none", border: "none",
+      }}>✕</button>
+
+      <div style={{ marginBottom: 16 }}>
+        <span className="mono" style={{
+          fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
+          color: traded ? "var(--green)" : "var(--accent)",
+        }}>
+          {traded ? `✓ ${result.n_trades} TRADE${result.n_trades > 1 ? "S" : ""} EXECUTED` : "⏸ NO TRADES THIS CYCLE"}
+        </span>
+      </div>
+
+      {traded ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {result.trades.map((t, i) => (
+            <div key={i} style={{
+              background: "rgba(0,0,0,0.2)", borderRadius: "var(--radius)",
+              padding: "14px 16px", border: "1px solid var(--border)",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span className={`tag ${t.side === "buy" ? "tag-up" : "tag-down"}`}>{t.side.toUpperCase()}</span>
+                  <span style={{ fontFamily: "var(--serif)", fontSize: 20, fontWeight: 500 }}>{t.symbol}</span>
+                  <span className="mono" style={{ fontSize: 12, color: "var(--text-3)" }}>${fmt(t.price)}</span>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div className="mono" style={{ fontSize: 13, fontWeight: 700 }}>${fmt(t.notional)}</div>
+                  {t.realized_pnl !== null && t.realized_pnl !== undefined && (
+                    <div className="mono" style={{ fontSize: 11, color: t.realized_pnl >= 0 ? "var(--green)" : "var(--red)", marginTop: 2 }}>
+                      Realized: {t.realized_pnl >= 0 ? "+" : ""}${fmt(t.realized_pnl)}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {t.ai_reasoning && (
+                <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.65, whiteSpace: "pre-line" }}>
+                  {t.ai_reasoning}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.7 }}>
+          {result.no_trade_reason}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AgentCard({ agent, onRun }: { agent: Agent; onRun: () => void }) {
   const meta = META[agent.name as keyof typeof META];
   const [tab, setTab] = useState<"overview" | "trades" | "decisions">("overview");
@@ -79,6 +160,7 @@ function AgentCard({ agent, onRun }: { agent: Agent; onRun: () => void }) {
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [perf, setPerf] = useState<PerfPoint[]>([]);
   const [running, setRunning] = useState(false);
+  const [runResult, setRunResult] = useState<RunResult | null>(null);
   const isUp = agent.pnl_pct >= 0;
 
   useEffect(() => {
@@ -97,10 +179,15 @@ function AgentCard({ agent, onRun }: { agent: Agent; onRun: () => void }) {
 
   const handleRun = async () => {
     setRunning(true);
+    setRunResult(null);
     try {
-      await fetch(`${API}/api/run/${agent.name}`, { method: "POST" });
-      setTimeout(() => { onRun(); setRunning(false); }, 1500);
+      const res = await fetch(`${API}/api/run/${agent.name}`, { method: "POST" });
+      const data = await res.json();
+      setRunResult(data);
+      setTimeout(() => onRun(), 1000);
     } catch {
+      setRunResult({ n_trades: 0, trades: [], no_trade_reason: "Could not connect to the AI backend. Try again in a moment." });
+    } finally {
       setRunning(false);
     }
   };
@@ -125,9 +212,7 @@ function AgentCard({ agent, onRun }: { agent: Agent; onRun: () => void }) {
           </span>
         </div>
         <h2 style={{ fontSize: 32, marginBottom: 6 }}>{meta.label}</h2>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="eyebrow" style={{ fontSize: 11 }}>{meta.strategy}</span>
-        </div>
+        <span className="eyebrow" style={{ fontSize: 11 }}>{meta.strategy}</span>
       </header>
 
       <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "16px 20px" }}>
@@ -158,17 +243,19 @@ function AgentCard({ agent, onRun }: { agent: Agent; onRun: () => void }) {
         <p style={{ fontSize: 14, lineHeight: 1.55, color: "var(--text)" }}>{agent.strategy_plain_english}</p>
       </div>
 
+      {/* Run result panel */}
+      {runResult && (
+        <RunResultPanel result={runResult} onClose={() => setRunResult(null)} />
+      )}
+
       <div>
         <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "1px solid var(--border)" }}>
           {(["overview", "trades", "decisions"] as const).map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
-              padding: "10px 14px",
-              fontSize: 13, fontWeight: 500,
+              padding: "10px 14px", fontSize: 13, fontWeight: 500,
               color: tab === t ? "var(--accent)" : "var(--text-2)",
               borderBottom: `2px solid ${tab === t ? "var(--accent)" : "transparent"}`,
-              marginBottom: -1,
-              transition: "all 0.2s",
-              textTransform: "capitalize",
+              marginBottom: -1, transition: "all 0.2s", textTransform: "capitalize",
             }}>{t}</button>
           ))}
         </div>
@@ -178,7 +265,7 @@ function AgentCard({ agent, onRun }: { agent: Agent; onRun: () => void }) {
             holdings.length === 0 ? (
               <div style={{ textAlign: "center", padding: "40px 0" }}>
                 <p style={{ fontSize: 13, color: "var(--text-3)", marginBottom: 4 }}>No positions yet</p>
-                <p className="mono" style={{ fontSize: 11, color: "var(--accent)", letterSpacing: "0.05em" }}>{meta.cadence}</p>
+                <p className="mono" style={{ fontSize: 11, color: "var(--accent)" }}>{meta.cadence}</p>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -202,6 +289,7 @@ function AgentCard({ agent, onRun }: { agent: Agent; onRun: () => void }) {
               </div>
             )
           )}
+
           {tab === "trades" && (
             trades.length === 0 ? (
               <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-3)", fontSize: 13 }}>No trades yet</div>
@@ -214,15 +302,25 @@ function AgentCard({ agent, onRun }: { agent: Agent; onRun: () => void }) {
                         <span className={`tag ${t.side === "buy" ? "tag-up" : "tag-down"}`}>{t.side.toUpperCase()}</span>
                         <span style={{ fontWeight: 500, fontSize: 13 }}>{t.symbol}</span>
                         <span className="mono" style={{ fontSize: 11, color: "var(--text-3)" }}>${fmt(t.notional)}</span>
+                        {t.realized_pnl !== null && t.realized_pnl !== undefined && (
+                          <span className="mono" style={{ fontSize: 11, color: t.realized_pnl >= 0 ? "var(--green)" : "var(--red)" }}>
+                            {t.realized_pnl >= 0 ? "+" : ""}${fmt(t.realized_pnl)}
+                          </span>
+                        )}
                       </div>
                       <span className="mono" style={{ fontSize: 10, color: "var(--text-3)" }}>{timeAgo(t.executed_at)}</span>
                     </div>
-                    <p style={{ fontSize: 12, color: "var(--text-2)", lineHeight: 1.5 }}>{t.rationale}</p>
+                    {t.ai_reasoning ? (
+                      <p style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.6, whiteSpace: "pre-line" }}>{t.ai_reasoning}</p>
+                    ) : (
+                      <p style={{ fontSize: 12, color: "var(--text-2)", lineHeight: 1.5 }}>{t.rationale}</p>
+                    )}
                   </div>
                 ))}
               </div>
             )
           )}
+
           {tab === "decisions" && (
             decisions.length === 0 ? (
               <div style={{ textAlign: "center", padding: "40px 0" }}>
