@@ -609,8 +609,21 @@ function AICalculator() {
   const [amount, setAmount] = useState("10000");
   const [strategy, setStrategy] = useState("momentum");
   const [result, setResult] = useState<CalcResult | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const calculate = () => { setResult(calcPureStrategy(parseFloat(amount) || 10000, strategy)); };
+  const calculate = async () => {
+    setLoading(true); setResult(null);
+    try {
+      const res = await fetch(`${API}/api/calculate-strategy`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: parseFloat(amount) || 10000, strategy }),
+      });
+      setResult(await res.json());
+    } catch {
+      setResult({ allocations: [], summary: "Could not connect to backend. Try again.", error: "network" });
+    } finally { setLoading(false); }
+  };
 
   return (
     <section className="section">
@@ -638,7 +651,7 @@ function AICalculator() {
           </select>
         </div>
         <div style={{ display: "flex", alignItems: "flex-end" }}>
-          <button className="btn btn-primary" onClick={calculate} style={{ width: "100%", justifyContent: "center" }}>Calculate →</button>
+          <button className="btn btn-primary" onClick={calculate} disabled={loading} style={{ width: "100%", justifyContent: "center", opacity: loading ? 0.7 : 1 }}>{loading ? "Running strategy..." : "Calculate →"}</button>
         </div>
       </div>
       {result && (
