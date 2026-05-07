@@ -1,4 +1,4 @@
-"use client";
+\"use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Footer } from "../components/Footer";
@@ -13,7 +13,11 @@ type CalcResult = { allocations: CalcAllocation[]; summary: string; error?: stri
 
 const META: Record<string, string> = { short_term: "Short-Term Agent", mid_term: "Mid-Term Agent", long_term: "Long-Term Agent" };
 
-function fmt(n: number, d = 2) { return n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function fmt(n: number, d = 2) {
+  if (isNaN(n)) return "0";
+  return n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
@@ -43,20 +47,57 @@ export default function MyPortfolioPage() {
       if (raw) setPortfolio(JSON.parse(raw));
       setUserName(localStorage.getItem("au_username") || "");
     } catch {}
+
     setLoaded(true);
+
     fetch(`${API}/api/agents`).then(r => r.json()).then(setAgents).catch(() => {});
+
+    const refreshPrices = () => {
+      try {
+        const raw = localStorage.getItem("au_portfolio");
+        if (!raw) return;
+        const parsed: Portfolio = JSON.parse(raw);
+        if (parsed.holdings.length === 0) return;
+
+        Promise.all(
+          parsed.holdings.map((h) =>
+            fetch(`/api/search?q=${encodeURIComponent(h.symbol)}`)
+              .then((r) => r.json())
+              .then((data) => {
+                const match = data.results?.find((r: any) => r.symbol === h.symbol);
+                return { symbol: h.symbol, price: match?.price || h.currentPrice };
+              })
+              .catch(() => ({ symbol: h.symbol, price: h.currentPrice }))
+          )
+        ).then((prices) => {
+          const updated = { ...parsed };
+          updated.holdings = parsed.holdings.map((h) => {
+            const live = prices.find((p) => p.symbol === h.symbol);
+            return { ...h, currentPrice: live?.price || h.currentPrice };
+          });
+          setPortfolio(updated);
+          localStorage.setItem("au_portfolio", JSON.stringify(updated));
+        });
+      } catch {}
+    };
+
+    refreshPrices();
+    const interval = setInterval(refreshPrices, 60000);
+    return () => clearInterval(interval);
   }, []);
 
-  const holdingsValue = portfolio.holdings.reduce((s, h) => s + h.shares * h.currentPrice, 0);
-  const totalInvested = portfolio.trades.filter(t => t.side === "buy").reduce((s, t) => s + t.total, 0);
-  const totalSold = portfolio.trades.filter(t => t.side === "sell").reduce((s, t) => s + t.total, 0);
+  const holdings = portfolio.holdings || [];
+  const trades = portfolio.trades || [];
+  const holdingsValue = holdings.reduce((s, h) => s + (h.shares || 0) * (h.currentPrice || 0), 0);
+  const totalInvested = trades.filter(t => t.side === "buy").reduce((s, t) => s + (t.total || 0), 0);
+  const totalSold = trades.filter(t => t.side === "sell").reduce((s, t) => s + (t.total || 0), 0);
   const pnl = holdingsValue + totalSold - totalInvested;
   const pnlPct = totalInvested > 0 ? (pnl / totalInvested) * 100 : 0;
   const isUp = pnl >= 0;
 
   const leaderboard = [
-    { name: userName || "You", pnlPct, pnl, isUser: true },
-    ...agents.map(a => ({ name: META[a.name] || a.name, pnlPct: a.pnl_pct * 100, pnl: a.pnl, isUser: false })),
+    { name: userName || "You", pnlPct: isNaN(pnlPct) ? 0 : pnlPct, pnl: isNaN(pnl) ? 0 : pnl, isUser: true },
+    ...agents.map(a => ({ name: META[a.name] || a.name, pnlPct: (a.pnl_pct || 0) * 100, pnl: a.pnl || 0, isUser: false })),
   ].sort((a, b) => b.pnlPct - a.pnlPct);
 
   const saveName = () => { localStorage.setItem("au_username", nameInput); setUserName(nameInput); setEditingName(false); };
@@ -95,7 +136,7 @@ export default function MyPortfolioPage() {
       </section>
 
       <section className="section">
-        {portfolio.trades.length === 0 ? (
+        {trades.length === 0 ? (
           <div className="card" style={{ textAlign: "center", padding: "80px 40px", borderStyle: "dashed" }}>
             <div style={{ fontSize: 56, marginBottom: 24, opacity: 0.5 }}>📊</div>
             <h2 style={{ fontSize: 36, marginBottom: 16 }}>No trades <em style={{ color: "var(--accent)", fontStyle: "italic", fontWeight: 400 }}>yet</em></h2>
@@ -113,7 +154,7 @@ export default function MyPortfolioPage() {
                 { label: "Total P&L", value: `${isUp ? "+" : ""}$${fmt(pnl)}`, color: isUp ? "var(--green)" : "var(--red)" },
                 { label: "Return", value: `${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(2)}%`, color: isUp ? "var(--green)" : "var(--red)" },
                 { label: "Total invested", value: `$${fmt(totalInvested)}`, color: "var(--text)" },
-                { label: "Total trades", value: `${portfolio.trades.length}`, color: "var(--text)" },
+                { label: "Total trades", value: `${trades.length}`, color: "var(--text)" },
               ].map(s => (
                 <div key={s.label} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "20px 24px" }}>
                   <div className="eyebrow" style={{ fontSize: 10, marginBottom: 8 }}>{s.label}</div>
@@ -130,11 +171,11 @@ export default function MyPortfolioPage() {
 
             {tab === "holdings" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {portfolio.holdings.length === 0 ? (
+                {holdings.length === 0 ? (
                   <div style={{ color: "var(--text-3)", fontSize: 14, padding: "40px 0", textAlign: "center" }}>No open positions. <Link href="/simulate" style={{ color: "var(--accent)" }}>Buy something →</Link></div>
-                ) : portfolio.holdings.map(h => {
+                ) : holdings.map(h => {
                   const value = h.shares * h.currentPrice;
-                  const gainPct = ((h.currentPrice - h.avgCost) / h.avgCost) * 100;
+                  const gainPct = h.avgCost > 0 ? ((h.currentPrice - h.avgCost) / h.avgCost) * 100 : 0;
                   return (
                     <div key={h.symbol} style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 20, alignItems: "center", padding: "16px 20px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)" }}>
                       <div style={{ width: 44, height: 44, borderRadius: "var(--radius)", background: "var(--accent-soft)", border: "1px solid var(--accent-strong)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--mono)", fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>{h.symbol.slice(0, 3)}</div>
@@ -156,7 +197,7 @@ export default function MyPortfolioPage() {
 
             {tab === "trades" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {portfolio.trades.map(t => (
+                {trades.map(t => (
                   <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       <span className={`tag ${t.side === "buy" ? "tag-up" : "tag-down"}`}>{t.side.toUpperCase()}</span>
@@ -177,7 +218,6 @@ export default function MyPortfolioPage() {
           </>
         )}
 
-        {/* Leaderboard */}
         <div style={{ marginTop: 60, paddingTop: 48, borderTop: "1px solid var(--border)" }}>
           <h2 style={{ fontSize: "clamp(24px, 3vw, 36px)", marginBottom: 8 }}>Can you beat <em style={{ color: "var(--accent)", fontStyle: "italic", fontWeight: 400 }}>the AI?</em></h2>
           <p style={{ fontSize: 14, color: "var(--text-2)", marginBottom: 32 }}>Your portfolio vs the three AI agents. Ranked by % return.</p>
@@ -217,10 +257,9 @@ export default function MyPortfolioPage() {
           </div>
         </div>
 
-        {/* AI Calculator */}
         <div style={{ marginTop: 60, paddingTop: 48, borderTop: "1px solid var(--border)" }}>
           <h2 style={{ fontSize: "clamp(24px, 3vw, 36px)", marginBottom: 8 }}>What would the AI <em style={{ color: "var(--accent)", fontStyle: "italic", fontWeight: 400 }}>buy?</em></h2>
-          <p style={{ fontSize: 14, color: "var(--text-2)", marginBottom: 32 }}>Enter any amount. Claude searches today's market and explains every pick with real news.</p>
+          <p style={{ fontSize: 14, color: "var(--text-2)", marginBottom: 32 }}>Enter any amount. Claude searches today&#39;s market and explains every pick with real news.</p>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 12, marginBottom: 32, alignItems: "end" }}>
             <div>
@@ -243,7 +282,7 @@ export default function MyPortfolioPage() {
             </button>
           </div>
 
-          {calcLoading && <div style={{ padding: "32px 0", textAlign: "center", color: "var(--text-3)", fontSize: 13, fontFamily: "var(--mono)" }}>Claude is searching today's market... this takes ~15 seconds</div>}
+          {calcLoading && <div style={{ padding: "32px 0", textAlign: "center", color: "var(--text-3)", fontSize: 13, fontFamily: "var(--mono)" }}>Claude is searching today&#39;s market... this takes ~15 seconds</div>}
 
           {calcResult && !calcLoading && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -270,7 +309,6 @@ export default function MyPortfolioPage() {
           )}
         </div>
 
-        {/* AI promo */}
         <div style={{ marginTop: 60 }}>
           <div className="card" style={{ background: "var(--accent-soft)", borderColor: "var(--accent-strong)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 24, flexWrap: "wrap" }}>
             <div>
