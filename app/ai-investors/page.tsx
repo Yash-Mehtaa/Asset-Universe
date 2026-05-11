@@ -4,8 +4,6 @@ import Link from "next/link";
 import { Footer } from "../components/Footer";
 
 const API = "https://asset-universe-ai-production.up.railway.app";
-const RATE_LIMIT = 3;
-
 type Agent = {
   id: number; name: string; horizon: string;
   cash: number; holdings_value: number; total_value: number;
@@ -42,11 +40,6 @@ function timeAgo(iso: string) {
   if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
 }
-
-function getRateLimitKey(agentName: string) { return `run_limit_${agentName}_${new Date().toISOString().slice(0, 10)}`; }
-function getRunCount(agentName: string): number { try { return parseInt(localStorage.getItem(getRateLimitKey(agentName)) || "0", 10); } catch { return 0; } }
-function incrementRunCount(agentName: string): number { try { const key = getRateLimitKey(agentName); const next = getRunCount(agentName) + 1; localStorage.setItem(key, String(next)); return next; } catch { return 1; } }
-function canRun(agentName: string): boolean { return getRunCount(agentName) < RATE_LIMIT; }
 
 function calcPureStrategy(amount: number, strategy: string): CalcResult {
   const pools: Record<string, { symbols: string[]; weights: number[] }> = {
@@ -133,12 +126,10 @@ function AgentCard({ agent, onRun }: { agent: Agent; onRun: () => void }) {
   const [history, setHistory] = useState<StrategyHistoryItem[]>([]);
   const [running, setRunning] = useState(false);
   const [runResult, setRunResult] = useState<RunResult | null>(null);
-  const [runCount, setRunCount] = useState(0);
   const [rollingBack, setRollingBack] = useState<number | null>(null);
   const isUp = agent.pnl_pct >= 0;
 
   useEffect(() => {
-    setRunCount(getRunCount(agent.name));
     Promise.all([
       fetch(`${API}/api/agents/${agent.name}/portfolio`).then(r => r.json()).catch(() => ({ holdings: [] })),
       fetch(`${API}/api/agents/${agent.name}/trades?limit=8`).then(r => r.json()).catch(() => []),
@@ -155,14 +146,11 @@ function AgentCard({ agent, onRun }: { agent: Agent; onRun: () => void }) {
   }, [agent.name]);
 
   const handleRun = async () => {
-    if (!canRun(agent.name)) return;
     setRunning(true); setRunResult(null);
     try {
       const res = await fetch(`${API}/api/run/${agent.name}`, { method: "POST" });
       const data = await res.json();
       setRunResult(data);
-      const newCount = incrementRunCount(agent.name);
-      setRunCount(newCount);
       setTimeout(() => onRun(), 1000);
     } catch {
       setRunResult({ n_trades: 0, trades: [], no_trade_reason: "Could not connect to the AI backend. Try again in a moment." });
@@ -180,9 +168,6 @@ function AgentCard({ agent, onRun }: { agent: Agent; onRun: () => void }) {
     } catch { alert("Rollback failed. Try again."); }
     finally { setRollingBack(null); }
   };
-
-  const runsLeft = RATE_LIMIT - runCount;
-  const rateLimited = !canRun(agent.name);
 
   return (
     <article style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", padding: 32, display: "flex", flexDirection: "column", gap: 24, transition: "border-color 0.25s" }}
@@ -229,16 +214,11 @@ function AgentCard({ agent, onRun }: { agent: Agent; onRun: () => void }) {
         <button
           className="btn btn-primary"
           onClick={handleRun}
-          disabled={running || rateLimited}
-          style={{ width: "100%", justifyContent: "center", opacity: running || rateLimited ? 0.5 : 1, cursor: rateLimited ? "not-allowed" : "pointer" }}
+          disabled={running}
+          style={{ width: "100%", justifyContent: "center", opacity: running ? 0.5 : 1 }}
         >
-          {running ? "Running..." : rateLimited ? "Limit reached (3/day)" : `Run Now${runsLeft < RATE_LIMIT ? ` (${runsLeft} left)` : ""}`}
+          {running ? "Running..." : "Run Now"}
         </button>
-        {rateLimited && (
-          <div style={{ fontSize: 12, color: "var(--text-3)", textAlign: "center", marginTop: 8 }}>
-            Daily limit of {RATE_LIMIT} manual runs reached. Resets at midnight.
-          </div>
-        )}
       </div>
 
       {runResult && <RunResultPanel result={runResult} onClose={() => setRunResult(null)} />}
